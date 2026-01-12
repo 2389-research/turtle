@@ -140,7 +140,7 @@ func (m Model) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // handleHomeKeys handles input on the home screen
 func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	menuItems := []string{"Start Practice", "Skill Tree", "Stats", "Quit"}
+	menuItems := []string{"Start Practice", "Speed Round", "Skill Tree", "Stats", "Quit"}
 
 	switch msg.String() {
 	case "up", "k":
@@ -158,11 +158,16 @@ func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case 0: // Start Practice
 			m.CurrentView = ViewLesson
 			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph)
-		case 1: // Skill Tree
+			return m, nil
+		case 1: // Speed Round
+			m.CurrentView = ViewLesson
+			m.LessonModel = NewSpeedRoundModel(m.Progress, m.SkillGraph)
+			return m, m.LessonModel.Init()
+		case 2: // Skill Tree
 			m.CurrentView = ViewSkillTree
-		case 2: // Stats
+		case 3: // Stats
 			m.CurrentView = ViewStats
-		case 3: // Quit
+		case 4: // Quit
 			m.quitting = true
 			return m, tea.Quit
 		}
@@ -218,7 +223,7 @@ func (m Model) renderHome() string {
 	header := m.renderHeader()
 
 	// Menu
-	menuItems := []string{"Start Practice", "Skill Tree", "Stats", "Quit"}
+	menuItems := []string{"Start Practice", "Speed Round ⚡", "Skill Tree", "Stats", "Quit"}
 	menu := "\n"
 	for i, item := range menuItems {
 		cursor := "  "
