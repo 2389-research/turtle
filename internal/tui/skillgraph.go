@@ -336,5 +336,35 @@ func buildDefaultSkillGraph() *skills.SkillGraph {
 		Prerequisites: []string{"tmux-window-nav"},
 	})
 
+	graph.AddSkill(&skills.Skill{
+		ID:            "tmux-kill",
+		Name:          "Kill session",
+		Description:   "Destroy a tmux session entirely",
+		Category:      skills.CategoryTmuxBasics,
+		Prerequisites: []string{"tmux-list"},
+	})
+
+	// ===================
+	// ADVANCED (Level 5)
+	// Workflow integration
+	// ===================
+
+	graph.AddSkill(&skills.Skill{
+		ID:                "workflow",
+		Name:              "Terminal workflows",
+		Description:       "Combine commands efficiently",
+		Category:          skills.CategoryAdvanced,
+		RequiresCategory:  skills.CategoryFileOps,
+		CategoryThreshold: 0.5,
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "tmux-workflow",
+		Name:          "Tmux workflows",
+		Description:   "Use tmux for productive development",
+		Category:      skills.CategoryAdvanced,
+		Prerequisites: []string{"workflow", "tmux-window-nav"},
+	})
+
 	return graph
 }

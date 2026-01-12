@@ -12,6 +12,8 @@ func GetAllMissions() map[int][]*Mission {
 		1: Level1Missions(), // Reading the filesystem
 		2: Level2Missions(), // File operations
 		3: Level3Missions(), // Search + inspection
+		4: Level4Missions(), // Tmux basics
+		5: Level5Missions(), // Muscle memory
 	}
 }
 
@@ -559,6 +561,388 @@ func Level3Missions() []*Mission {
 			},
 			Explanation: "Combining commands is powerful. find locates, cat reads. You can even pipe find's output to other commands!",
 			Commands:    []string{"find . -name .secret", "cat stuff/more/.secret"},
+		},
+	}
+}
+
+// ===================
+// LEVEL 4: TMUX BASICS
+// Goal: "I can manage terminal sessions"
+// ===================
+
+//nolint:funlen // Data definition function
+func Level4Missions() []*Mission {
+	return []*Mission{
+		// Mission 4.1: Start tmux
+		{
+			ID:       "4.1-start-tmux",
+			SkillID:  "tmux-new",
+			Level:    4,
+			Title:    "Enter the Multiplexer",
+			Briefing: "Start a new tmux session. Just type 'tmux' to begin.",
+			Hint:     "Simply run: tmux",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true // Checked via TmuxState
+			},
+			Explanation: "tmux is a terminal multiplexer - it lets you have multiple terminal sessions in one window, and they persist even if you disconnect!",
+			Commands:    []string{"tmux"},
+		},
+
+		// Mission 4.2: Create named session
+		{
+			ID:       "4.2-named-session",
+			SkillID:  "tmux-new",
+			Level:    4,
+			Title:    "Name Your Session",
+			Briefing: "Create a new tmux session named 'work'. Named sessions are easier to manage.",
+			Hint:     "tmux new -s sessionname",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux new -s name creates a named session. When you have multiple sessions, names help you remember which is which.",
+			Commands:    []string{"tmux new -s work", "tmux new-session -s work"},
+		},
+
+		// Mission 4.3: Detach from session
+		{
+			ID:       "4.3-detach",
+			SkillID:  "tmux-detach",
+			Level:    4,
+			Title:    "Step Away",
+			Briefing: "You're in a tmux session. Detach from it without closing it. The session will keep running!",
+			Hint:     "tmux detach (or the keyboard shortcut Ctrl-b d)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux detach leaves the session running in the background. Your processes continue even when you're not attached!",
+			Commands:    []string{"tmux detach", "tmux d"},
+		},
+
+		// Mission 4.4: List sessions
+		{
+			ID:       "4.4-list-sessions",
+			SkillID:  "tmux-list",
+			Level:    4,
+			Title:    "What's Running?",
+			Briefing: "You've detached. Now check what tmux sessions are running.",
+			Hint:     "tmux ls (short for list-sessions)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux ls shows all your tmux sessions. You can see which ones are attached and how many windows each has.",
+			Commands:    []string{"tmux ls", "tmux list-sessions"},
+		},
+
+		// Mission 4.5: Reattach to session
+		{
+			ID:       "4.5-attach",
+			SkillID:  "tmux-attach",
+			Level:    4,
+			Title:    "Return to Work",
+			Briefing: "Reattach to your detached tmux session.",
+			Hint:     "tmux attach (or tmux a for short)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux attach reconnects you to a session. Add -t sessionname to attach to a specific one.",
+			Commands:    []string{"tmux attach", "tmux a", "tmux attach-session"},
+		},
+
+		// Mission 4.6: Split horizontally
+		{
+			ID:       "4.6-split-horizontal",
+			SkillID:  "tmux-split-h",
+			Level:    4,
+			Title:    "Split the Screen",
+			Briefing: "Split your tmux pane horizontally (left and right).",
+			Hint:     "tmux split-window (or Ctrl-b %)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux split-window creates a new pane. By default it splits horizontally. Now you can see two terminals at once!",
+			Commands:    []string{"tmux split-window", "tmux split"},
+		},
+
+		// Mission 4.7: Split vertically
+		{
+			ID:       "4.7-split-vertical",
+			SkillID:  "tmux-split-v",
+			Level:    4,
+			Title:    "Stack the Panes",
+			Briefing: "Split your tmux pane vertically (top and bottom).",
+			Hint:     "Add -v flag for vertical split (or Ctrl-b \")",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux split-window -v splits vertically. -v means vertical division (panes stacked top/bottom).",
+			Commands:    []string{"tmux split-window -v", "tmux split -v"},
+		},
+
+		// Mission 4.8: Navigate panes
+		{
+			ID:       "4.8-select-pane",
+			SkillID:  "tmux-pane-nav",
+			Level:    4,
+			Title:    "Jump Between Panes",
+			Briefing: "You have multiple panes. Move to the pane on your right.",
+			Hint:     "tmux select-pane -R (or Ctrl-b arrow key)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux select-pane -L/R/U/D moves between panes. L=left, R=right, U=up, D=down.",
+			Commands:    []string{"tmux select-pane -R"},
+		},
+
+		// Mission 4.9: Create new window
+		{
+			ID:       "4.9-new-window",
+			SkillID:  "tmux-window-new",
+			Level:    4,
+			Title:    "Open a New Window",
+			Briefing: "Create a new tmux window. Windows are like tabs in a browser.",
+			Hint:     "tmux new-window (or Ctrl-b c)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "Windows are full-screen views. Use them to organize different tasks. Panes split one window; windows give you fresh space.",
+			Commands:    []string{"tmux new-window"},
+		},
+
+		// Mission 4.10: Switch windows
+		{
+			ID:       "4.10-select-window",
+			SkillID:  "tmux-window-nav",
+			Level:    4,
+			Title:    "Switch Windows",
+			Briefing: "Switch to the next tmux window.",
+			Hint:     "tmux select-window -n (or Ctrl-b n)",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "select-window -n goes to next window, -p to previous. Or use Ctrl-b followed by the window number.",
+			Commands:    []string{"tmux select-window -n"},
+		},
+
+		// Mission 4.11: Kill session
+		{
+			ID:       "4.11-kill-session",
+			SkillID:  "tmux-kill",
+			Level:    4,
+			Title:    "Clean Up",
+			Briefing: "You're done with this tmux session. Kill it entirely.",
+			Hint:     "tmux kill-session",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "tmux kill-session destroys the session and all its windows/panes. Use -t name to kill a specific session.",
+			Commands:    []string{"tmux kill-session"},
+		},
+	}
+}
+
+// ===================
+// LEVEL 5: MUSCLE MEMORY
+// Goal: "I can work efficiently"
+// ===================
+
+//nolint:funlen // Data definition function
+func Level5Missions() []*Mission {
+	return []*Mission{
+		// Mission 5.1: Project setup workflow
+		{
+			ID:       "5.1-project-setup",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Set Up a Project",
+			Briefing: "Create a project structure: mkdir myapp, then inside it create src/, tests/, and docs/ folders, plus a README.md file.",
+			Hint:     "Use mkdir for folders, touch for files. You can chain commands.",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Cd("/home/learner")
+			},
+			Goal: func(fs *Filesystem) bool {
+				return fs.Exists("/home/learner/myapp/src") &&
+					fs.Exists("/home/learner/myapp/tests") &&
+					fs.Exists("/home/learner/myapp/docs") &&
+					fs.Exists("/home/learner/myapp/README.md")
+			},
+			Explanation: "Good project structure is a habit. src/ for code, tests/ for tests, docs/ for documentation. README.md explains your project.",
+			Commands:    []string{"mkdir myapp", "mkdir myapp/src myapp/tests myapp/docs", "touch myapp/README.md"},
+		},
+
+		// Mission 5.2: Find and edit
+		{
+			ID:       "5.2-find-and-edit",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Hunt and Fix",
+			Briefing: "Find all .py files under /home/learner/project, then create a backup of main.py as main.py.bak",
+			Hint:     "find for searching, cp for backup",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Mkdir("/home/learner/project/src")
+				_ = fs.Mkdir("/home/learner/project/tests")
+				_ = fs.WriteFile("/home/learner/project/src/main.py", "print('hello')")
+				_ = fs.WriteFile("/home/learner/project/src/utils.py", "def helper(): pass")
+				_ = fs.WriteFile("/home/learner/project/tests/test_main.py", "def test(): pass")
+				_ = fs.Cd("/home/learner/project")
+			},
+			Goal: func(fs *Filesystem) bool {
+				return fs.Exists("/home/learner/project/src/main.py.bak")
+			},
+			Explanation: "Real workflow: find files, understand structure, make backups before editing. Professionals always backup first!",
+			Commands:    []string{"find . -name \"*.py\"", "cp src/main.py src/main.py.bak"},
+		},
+
+		// Mission 5.3: Tmux dev environment
+		{
+			ID:       "5.3-tmux-dev-setup",
+			SkillID:  "tmux-workflow",
+			Level:    5,
+			Title:    "Dev Environment",
+			Briefing: "Create a tmux session named 'dev', then split it into two panes.",
+			Hint:     "tmux new -s dev, then tmux split-window",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "Pro setup: one pane for editing, one for running commands. Name your sessions so you can find them later!",
+			Commands:    []string{"tmux new -s dev", "tmux split-window"},
+		},
+
+		// Mission 5.4: Log investigation
+		{
+			ID:       "5.4-log-investigation",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Debug Detective",
+			Briefing: "Find all ERROR lines in /var/log/app.log, and also check what WARNING messages exist.",
+			Hint:     "Use grep twice with different patterns",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Mkdir("/var/log")
+				logContent := `2024-01-01 10:00:00 INFO: Server started
+2024-01-01 10:00:01 INFO: Loading configuration
+2024-01-01 10:00:02 WARNING: Config file not found, using defaults
+2024-01-01 10:00:03 INFO: Database connecting
+2024-01-01 10:00:05 ERROR: Database connection timeout
+2024-01-01 10:00:06 INFO: Retrying connection
+2024-01-01 10:00:08 WARNING: Slow connection detected
+2024-01-01 10:00:10 INFO: Connected successfully
+2024-01-01 10:05:00 ERROR: Request failed: 500
+2024-01-01 10:05:01 INFO: Error logged to monitoring`
+				_ = fs.WriteFile("/var/log/app.log", logContent)
+				_ = fs.Cd("/var/log")
+			},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "Real debugging: check errors first, then warnings. grep is your best friend for log analysis!",
+			Commands:    []string{"grep ERROR app.log", "grep WARNING app.log"},
+		},
+
+		// Mission 5.5: Cleanup workflow
+		{
+			ID:       "5.5-cleanup",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Spring Cleaning",
+			Briefing: "In /home/learner/downloads, delete all .tmp files but keep everything else.",
+			Hint:     "Use find to locate .tmp files, then rm each one",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Mkdir("/home/learner/downloads")
+				_ = fs.Touch("/home/learner/downloads/report.pdf")
+				_ = fs.Touch("/home/learner/downloads/cache.tmp")
+				_ = fs.Touch("/home/learner/downloads/session.tmp")
+				_ = fs.Touch("/home/learner/downloads/photo.jpg")
+				_ = fs.Touch("/home/learner/downloads/backup.tmp")
+				_ = fs.Cd("/home/learner/downloads")
+			},
+			Goal: func(fs *Filesystem) bool {
+				return !fs.Exists("/home/learner/downloads/cache.tmp") &&
+					!fs.Exists("/home/learner/downloads/session.tmp") &&
+					!fs.Exists("/home/learner/downloads/backup.tmp") &&
+					fs.Exists("/home/learner/downloads/report.pdf") &&
+					fs.Exists("/home/learner/downloads/photo.jpg")
+			},
+			Explanation: "Targeted cleanup: find what to delete, verify, then remove. Never use rm * blindly!",
+			Commands:    []string{"find . -name \"*.tmp\"", "rm cache.tmp session.tmp backup.tmp"},
+		},
+
+		// Mission 5.6: Multi-window workflow
+		{
+			ID:       "5.6-multi-window",
+			SkillID:  "tmux-workflow",
+			Level:    5,
+			Title:    "Window Manager",
+			Briefing: "Create a tmux session with two windows: one for 'code', one for 'tests'.",
+			Hint:     "tmux new-session, then tmux new-window twice",
+			Setup:    func(_ *Filesystem) {},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "Multiple windows let you organize by task. Window 1 for coding, window 2 for tests, window 3 for servers...",
+			Commands:    []string{"tmux new -s project", "tmux new-window", "tmux new-window"},
+		},
+
+		// Mission 5.7: Organize a mess
+		{
+			ID:       "5.7-organize-mess",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Untangle the Mess",
+			Briefing: "Move all .log files to logs/, all .py files to src/, and all .md files to docs/. Create folders if needed.",
+			Hint:     "mkdir first, then mv files to appropriate folders",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Mkdir("/home/learner/chaos")
+				_ = fs.Touch("/home/learner/chaos/app.log")
+				_ = fs.Touch("/home/learner/chaos/error.log")
+				_ = fs.Touch("/home/learner/chaos/main.py")
+				_ = fs.Touch("/home/learner/chaos/utils.py")
+				_ = fs.Touch("/home/learner/chaos/README.md")
+				_ = fs.Touch("/home/learner/chaos/CHANGELOG.md")
+				_ = fs.Cd("/home/learner/chaos")
+			},
+			Goal: func(fs *Filesystem) bool {
+				return fs.Exists("/home/learner/chaos/logs/app.log") &&
+					fs.Exists("/home/learner/chaos/logs/error.log") &&
+					fs.Exists("/home/learner/chaos/src/main.py") &&
+					fs.Exists("/home/learner/chaos/src/utils.py") &&
+					fs.Exists("/home/learner/chaos/docs/README.md") &&
+					fs.Exists("/home/learner/chaos/docs/CHANGELOG.md")
+			},
+			Explanation: "Organization is a skill. Group related files, use clear folder names. Your future self will thank you!",
+			Commands:    []string{"mkdir logs src docs", "mv app.log error.log logs/", "mv main.py utils.py src/", "mv README.md CHANGELOG.md docs/"},
+		},
+
+		// Mission 5.8: Quick environment check
+		{
+			ID:       "5.8-env-check",
+			SkillID:  "workflow",
+			Level:    5,
+			Title:    "Environment Recon",
+			Briefing: "Figure out: Where are you? What's here? Are there any hidden files? Do this in three commands.",
+			Hint:     "pwd, ls, ls -a",
+			Setup: func(fs *Filesystem) {
+				_ = fs.Mkdir("/home/learner/secret-project")
+				_ = fs.Touch("/home/learner/secret-project/visible.txt")
+				_ = fs.Touch("/home/learner/secret-project/.hidden-config")
+				_ = fs.Touch("/home/learner/secret-project/.env")
+				_ = fs.Cd("/home/learner/secret-project")
+			},
+			Goal: func(_ *Filesystem) bool {
+				return true
+			},
+			Explanation: "First thing in any directory: pwd, ls, ls -a. Know where you are and what's there. Hidden files often contain secrets!",
+			Commands:    []string{"pwd", "ls", "ls -a"},
 		},
 	}
 }

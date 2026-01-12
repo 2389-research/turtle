@@ -3,7 +3,10 @@
 
 package sandbox
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Mission represents a goal-based learning challenge.
 type Mission struct {
@@ -27,6 +30,17 @@ type MissionResult struct {
 	Completed bool   // Mission goal achieved
 }
 
+// TmuxState tracks simulated tmux session state.
+type TmuxState struct {
+	InSession     bool
+	SessionName   string
+	Panes         int
+	Windows       int
+	CurrentPane   int
+	CurrentWindow int
+	Detached      bool
+}
+
 // MissionRunner executes missions in the sandbox.
 type MissionRunner struct {
 	FS        *Filesystem
@@ -34,7 +48,8 @@ type MissionRunner struct {
 	InitialFS *Filesystem // For reset
 	Attempts  int
 	Completed bool
-	History   []string // Commands entered
+	History   []string  // Commands entered
+	Tmux      TmuxState // Tmux simulation state
 }
 
 // NewMissionRunner creates a runner for a mission.
@@ -298,9 +313,12 @@ func (r *MissionRunner) executeCommand(cmd string, args []string) MissionResult 
 
 	case "help":
 		return MissionResult{
-			Output:  "Available: pwd, ls, cd, mkdir, touch, cat, cp, mv, rm, echo, grep, find, clear",
+			Output:  "Available: pwd, ls, cd, mkdir, touch, cat, cp, mv, rm, echo, grep, find, clear, tmux",
 			Success: true,
 		}
+
+	case "tmux":
+		return r.executeTmux(args)
 
 	default:
 		return MissionResult{
@@ -319,4 +337,196 @@ func (r *MissionRunner) GetCurrentLocation() string {
 		return "~" + strings.TrimPrefix(path, r.FS.Home)
 	}
 	return path
+}
+
+// executeTmux handles tmux commands.
+//
+//nolint:funlen,gocognit,gocyclo // Tmux command dispatcher requires many branches
+func (r *MissionRunner) executeTmux(args []string) MissionResult {
+	if len(args) == 0 {
+		// Just 'tmux' starts a new session
+		if r.Tmux.InSession {
+			return MissionResult{Error: "sessions should be nested with care, unset $TMUX to force"}
+		}
+		r.Tmux.InSession = true
+		r.Tmux.SessionName = "0"
+		r.Tmux.Panes = 1
+		r.Tmux.Windows = 1
+		r.Tmux.CurrentPane = 0
+		r.Tmux.CurrentWindow = 0
+		r.Tmux.Detached = false
+		return MissionResult{
+			Output:  "[new session 0 created]",
+			Success: true,
+		}
+	}
+
+	subCmd := args[0]
+	subArgs := args[1:]
+
+	switch subCmd {
+	case "new", "new-session":
+		if r.Tmux.InSession && !r.Tmux.Detached {
+			return MissionResult{Error: "sessions should be nested with care, unset $TMUX to force"}
+		}
+		sessionName := "0"
+		for i, arg := range subArgs {
+			if arg == "-s" && i+1 < len(subArgs) {
+				sessionName = subArgs[i+1]
+			}
+		}
+		r.Tmux.InSession = true
+		r.Tmux.SessionName = sessionName
+		r.Tmux.Panes = 1
+		r.Tmux.Windows = 1
+		r.Tmux.CurrentPane = 0
+		r.Tmux.CurrentWindow = 0
+		r.Tmux.Detached = false
+		return MissionResult{
+			Output:  fmt.Sprintf("[new session %s created]", sessionName),
+			Success: true,
+		}
+
+	case "attach", "attach-session", "a":
+		if r.Tmux.InSession && !r.Tmux.Detached {
+			return MissionResult{Error: "sessions should be nested with care"}
+		}
+		if !r.Tmux.Detached && r.Tmux.SessionName == "" {
+			return MissionResult{Error: "no sessions"}
+		}
+		r.Tmux.Detached = false
+		r.Tmux.InSession = true
+		return MissionResult{
+			Output:  fmt.Sprintf("[attached to session %s]", r.Tmux.SessionName),
+			Success: true,
+		}
+
+	case "detach", "detach-client", "d":
+		if !r.Tmux.InSession || r.Tmux.Detached {
+			return MissionResult{Error: "no current client"}
+		}
+		r.Tmux.Detached = true
+		return MissionResult{
+			Output:  fmt.Sprintf("[detached (from session %s)]", r.Tmux.SessionName),
+			Success: true,
+		}
+
+	case "ls", "list-sessions":
+		if r.Tmux.SessionName == "" {
+			return MissionResult{
+				Output:  "no server running",
+				Success: true,
+			}
+		}
+		attached := ""
+		if r.Tmux.InSession && !r.Tmux.Detached {
+			attached = " (attached)"
+		}
+		return MissionResult{
+			Output:  fmt.Sprintf("%s: %d windows%s", r.Tmux.SessionName, r.Tmux.Windows, attached),
+			Success: true,
+		}
+
+	case "split-window", "split":
+		if !r.Tmux.InSession || r.Tmux.Detached {
+			return MissionResult{Error: "no current session"}
+		}
+		r.Tmux.Panes++
+		direction := "horizontally"
+		for _, arg := range subArgs {
+			if arg == "-v" {
+				direction = "vertically"
+			}
+		}
+		return MissionResult{
+			Output:  fmt.Sprintf("[split %s, now %d panes]", direction, r.Tmux.Panes),
+			Success: true,
+		}
+
+	case "select-pane":
+		if !r.Tmux.InSession || r.Tmux.Detached {
+			return MissionResult{Error: "no current session"}
+		}
+		// Handle -L, -R, -U, -D for direction
+		direction := "next"
+		for _, arg := range subArgs {
+			switch arg {
+			case "-L":
+				direction = "left"
+			case "-R":
+				direction = "right"
+			case "-U":
+				direction = "up"
+			case "-D":
+				direction = "down"
+			}
+		}
+		r.Tmux.CurrentPane = (r.Tmux.CurrentPane + 1) % r.Tmux.Panes
+		return MissionResult{
+			Output:  fmt.Sprintf("[moved %s to pane %d]", direction, r.Tmux.CurrentPane),
+			Success: true,
+		}
+
+	case "new-window":
+		if !r.Tmux.InSession || r.Tmux.Detached {
+			return MissionResult{Error: "no current session"}
+		}
+		r.Tmux.Windows++
+		r.Tmux.CurrentWindow = r.Tmux.Windows - 1
+		return MissionResult{
+			Output:  fmt.Sprintf("[new window %d created]", r.Tmux.CurrentWindow),
+			Success: true,
+		}
+
+	case "select-window":
+		if !r.Tmux.InSession || r.Tmux.Detached {
+			return MissionResult{Error: "no current session"}
+		}
+		// Handle -n (next) and -p (previous)
+		for _, arg := range subArgs {
+			switch arg {
+			case "-n":
+				r.Tmux.CurrentWindow = (r.Tmux.CurrentWindow + 1) % r.Tmux.Windows
+			case "-p":
+				r.Tmux.CurrentWindow = (r.Tmux.CurrentWindow - 1 + r.Tmux.Windows) % r.Tmux.Windows
+			}
+		}
+		return MissionResult{
+			Output:  fmt.Sprintf("[switched to window %d]", r.Tmux.CurrentWindow),
+			Success: true,
+		}
+
+	case "kill-session":
+		if r.Tmux.SessionName == "" {
+			return MissionResult{Error: "no sessions"}
+		}
+		name := r.Tmux.SessionName
+		r.Tmux = TmuxState{}
+		return MissionResult{
+			Output:  fmt.Sprintf("[killed session %s]", name),
+			Success: true,
+		}
+
+	default:
+		return MissionResult{
+			Error: fmt.Sprintf("tmux: unknown command: %s", subCmd),
+		}
+	}
+}
+
+// InTmuxSession returns true if currently in a tmux session.
+func (r *MissionRunner) InTmuxSession() bool {
+	return r.Tmux.InSession && !r.Tmux.Detached
+}
+
+// GetTmuxStatus returns a description of the current tmux state.
+func (r *MissionRunner) GetTmuxStatus() string {
+	if !r.Tmux.InSession && r.Tmux.SessionName == "" {
+		return "not in tmux"
+	}
+	if r.Tmux.Detached {
+		return fmt.Sprintf("detached from session '%s'", r.Tmux.SessionName)
+	}
+	return fmt.Sprintf("session '%s' [%d windows, %d panes]",
+		r.Tmux.SessionName, r.Tmux.Windows, r.Tmux.Panes)
 }
