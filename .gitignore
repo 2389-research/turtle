@@ -1,0 +1,16 @@
+# Binaries (root level only)
+/turtle
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test artifacts
+coverage.out
+
+# OS files
+.DS_Store
+Thumbs.db
