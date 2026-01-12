@@ -5,7 +5,7 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Colors - turtle-inspired palette
+// Colors - turtle-inspired palette.
 var (
 	ColorPrimary   = lipgloss.Color("#4CAF50") // Turtle green
 	ColorSecondary = lipgloss.Color("#8BC34A") // Light green
@@ -16,7 +16,7 @@ var (
 	ColorBgLight   = lipgloss.Color("#2D2D2D") // Slightly lighter bg
 )
 
-// Base styles
+// Base styles.
 var (
 	BaseStyle = lipgloss.NewStyle().
 			Background(ColorBg)
@@ -43,7 +43,7 @@ var (
 			Foreground(ColorPrimary)
 )
 
-// Component styles
+// Component styles.
 var (
 	BoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -70,7 +70,7 @@ var (
 				Foreground(ColorMuted)
 )
 
-// Header/footer
+// Header/footer.
 var (
 	HeaderStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -86,7 +86,7 @@ var (
 			Width(80)
 )
 
-// Stats display
+// Stats display.
 var (
 	StatLabelStyle = lipgloss.NewStyle().
 			Foreground(ColorMuted).
@@ -108,7 +108,7 @@ var (
 			Foreground(ColorDanger)
 )
 
-// Terminal simulator styles
+// Terminal simulator styles.
 var (
 	TerminalStyle = lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder()).
@@ -130,7 +130,7 @@ var (
 				Foreground(ColorDanger)
 )
 
-// Helper to create a progress bar
+// Helper to create a progress bar.
 func ProgressBar(width int, percent float64) string {
 	filled := int(float64(width) * percent)
 	if filled > width {

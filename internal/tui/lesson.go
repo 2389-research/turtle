@@ -16,32 +16,32 @@ import (
 	"github.com/2389-research/turtle/internal/srs"
 )
 
-// SpeedRoundDuration is the time limit for speed rounds
+// SpeedRoundDuration is the time limit for speed rounds.
 const SpeedRoundDuration = 30 // seconds
 
-// tickMsg is sent every second during speed rounds
+// tickMsg is sent every second during speed rounds.
 type tickMsg time.Time
 
-// tickCmd returns a command that sends a tick every second
+// tickCmd returns a command that sends a tick every second.
 func tickCmd() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
 
-// ChallengeType represents different kinds of exercises
+// ChallengeType represents different kinds of exercises.
 type ChallengeType int
 
 const (
-	ChallengeTypeCommand      ChallengeType = iota // Type the command
-	ChallengeMultipleChoice                        // Pick from options A/B/C/D
-	ChallengeFixError                              // Fix a broken command
-	ChallengePredictOutput                         // What does this output?
-	ChallengeTranslate                             // Natural language -> command
-	ChallengeSpeedRound                            // Rapid fire timed questions
+	ChallengeTypeCommand    ChallengeType = iota // Type the command
+	ChallengeMultipleChoice                      // Pick from options A/B/C/D
+	ChallengeFixError                            // Fix a broken command
+	ChallengePredictOutput                       // What does this output?
+	ChallengeTranslate                           // Natural language -> command
+	ChallengeSpeedRound                          // Rapid fire timed questions
 )
 
-// Challenge represents a single practice exercise
+// Challenge represents a single practice exercise.
 type Challenge struct {
 	Type          ChallengeType
 	SkillID       string
@@ -54,7 +54,7 @@ type Challenge struct {
 	CommandOutput string   // For predict-output: what the command actually outputs
 }
 
-// LessonModel handles a practice session
+// LessonModel handles a practice session.
 type LessonModel struct {
 	Progress       *skills.UserProgress
 	SkillGraph     *skills.SkillGraph
@@ -73,7 +73,7 @@ type LessonModel struct {
 	SpeedTimeLeft  int // Seconds remaining in speed round
 }
 
-// NewLessonModel creates a new practice session
+// NewLessonModel creates a new practice session.
 func NewLessonModel(progress *skills.UserProgress, graph *skills.SkillGraph) *LessonModel {
 	// Generate challenges based on due skills and unlocked skills
 	challenges := generateChallenges(progress, graph)
@@ -91,14 +91,14 @@ func NewLessonModel(progress *skills.UserProgress, graph *skills.SkillGraph) *Le
 	}
 }
 
-// NewSpeedRoundModel creates a timed speed round session
+// NewSpeedRoundModel creates a timed speed round session.
 func NewSpeedRoundModel(progress *skills.UserProgress, graph *skills.SkillGraph) *LessonModel {
 	// Generate many quick challenges for speed round
 	challenges := generateSpeedChallenges(progress, graph)
 
 	return &LessonModel{
 		Progress:      progress,
-		SkillGraph:   graph,
+		SkillGraph:    graph,
 		Challenges:    challenges,
 		CurrentIndex:  0,
 		Input:         "",
@@ -111,7 +111,7 @@ func NewSpeedRoundModel(progress *skills.UserProgress, graph *skills.SkillGraph)
 	}
 }
 
-// generateSpeedChallenges creates rapid-fire challenges for speed rounds
+// generateSpeedChallenges creates rapid-fire challenges for speed rounds.
 func generateSpeedChallenges(progress *skills.UserProgress, graph *skills.SkillGraph) []Challenge {
 	// Collect all quick challenges from unlocked skills
 	var allChallenges []Challenge
@@ -144,7 +144,7 @@ func generateSpeedChallenges(progress *skills.UserProgress, graph *skills.SkillG
 	return allChallenges
 }
 
-// generateChallenges creates a set of challenges for this session
+// generateChallenges creates a set of challenges for this session.
 func generateChallenges(progress *skills.UserProgress, graph *skills.SkillGraph) []Challenge {
 	var challenges []Challenge
 
@@ -170,326 +170,21 @@ func generateChallenges(progress *skills.UserProgress, graph *skills.SkillGraph)
 	return challenges
 }
 
-// getChallengesForSkill returns challenges for a specific skill
+// getChallengesForSkill returns challenges for a specific skill from the challenge database.
 func getChallengesForSkill(skillID string) []Challenge {
-	switch skillID {
-	case "pwd":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "pwd",
-				Prompt:      "Print the current working directory",
-				Expected:    "pwd",
-				Hint:        "Three letters: print working directory",
-				Explanation: "pwd shows where you are in the filesystem",
-			},
-			{
-				Type:        ChallengeTranslate,
-				SkillID:     "pwd",
-				Prompt:      "\"Where am I?\" translates to:",
-				Expected:    "pwd",
-				Hint:        "The command shows your current location",
-				Explanation: "pwd = print working directory",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "pwd",
-				Prompt:  "What does 'pwd' stand for?",
-				Options: []string{
-					"Print Working Directory",
-					"Path to Working Directory",
-					"Present Working Dir",
-					"Print Where Directory",
-				},
-				Expected:    "0", // First option is correct
-				Hint:        "It prints where you currently are",
-				Explanation: "pwd = Print Working Directory",
-			},
-			{
-				Type:          ChallengePredictOutput,
-				SkillID:       "pwd",
-				Prompt:        "If you're in /home/user/projects, what does pwd output?",
-				BrokenCommand: "pwd",
-				Options: []string{
-					"/home/user/projects",
-					"projects",
-					"/home/user",
-					"user/projects",
-				},
-				Expected:    "0",
-				Hint:        "pwd shows the FULL path",
-				Explanation: "pwd always shows the complete absolute path",
-			},
-		}
-	case "ls":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "ls",
-				Prompt:      "List files in the current directory",
-				Expected:    "ls",
-				Hint:        "Two letters, rhymes with 'miss'",
-				Explanation: "ls lists directory contents",
-			},
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "ls",
-				Prompt:      "List ALL files (including hidden)",
-				Expected:    "ls -a",
-				Hint:        "Add the -a flag for 'all'",
-				Explanation: "ls -a shows hidden files (starting with .)",
-			},
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "ls",
-				Prompt:      "List files with details (long format)",
-				Expected:    "ls -l",
-				Hint:        "Add the -l flag for 'long'",
-				Explanation: "ls -l shows permissions, size, dates",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "ls",
-				Prompt:  "Which flag shows hidden files?",
-				Options: []string{
-					"-a",
-					"-h",
-					"-l",
-					"-s",
-				},
-				Expected:    "0",
-				Hint:        "'a' for 'all'",
-				Explanation: "-a shows ALL files including hidden ones (starting with .)",
-			},
-			{
-				Type:          ChallengeFixError,
-				SkillID:       "ls",
-				Prompt:        "Fix this command to list hidden files:",
-				BrokenCommand: "ls -h",
-				Expected:      "ls -a",
-				Hint:          "-h is for human-readable sizes, not hidden files",
-				Explanation:   "-a shows hidden files, -h makes sizes human-readable",
-			},
-		}
-	case "cd":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "cd",
-				Prompt:      "Change to your home directory",
-				Expected:    "cd",
-				Hint:        "Just the command, no arguments",
-				Explanation: "cd alone takes you home",
-			},
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "cd",
-				Prompt:      "Go to the /tmp directory",
-				Expected:    "cd /tmp",
-				Hint:        "cd followed by the path",
-				Explanation: "cd <path> changes to that directory",
-			},
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "cd",
-				Prompt:      "Go up one directory level",
-				Expected:    "cd ..",
-				Hint:        "Two dots represent parent directory",
-				Explanation: ".. always means 'parent directory'",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "cd",
-				Prompt:  "What does '..' represent?",
-				Options: []string{
-					"Parent directory",
-					"Current directory",
-					"Home directory",
-					"Root directory",
-				},
-				Expected:    "0",
-				Hint:        "Two dots go UP one level",
-				Explanation: ".. = parent directory, . = current directory",
-			},
-			{
-				Type:          ChallengeFixError,
-				SkillID:       "cd",
-				Prompt:        "Fix this command to go up one level:",
-				BrokenCommand: "cd .",
-				Expected:      "cd ..",
-				Hint:          "One dot is current, two dots is parent",
-				Explanation:   ". = current dir (no change), .. = parent dir (go up)",
-			},
-			{
-				Type:          ChallengePredictOutput,
-				SkillID:       "cd",
-				Prompt:        "After 'cd ..', if you were in /home/user/docs, where are you now?",
-				BrokenCommand: "cd ..",
-				Options: []string{
-					"/home/user",
-					"/home/user/docs",
-					"/home",
-					"/",
-				},
-				Expected:    "0",
-				Hint:        "Go UP one directory",
-				Explanation: "cd .. moves you to the parent directory",
-			},
-		}
-	case "mkdir":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "mkdir",
-				Prompt:      "Create a directory called 'projects'",
-				Expected:    "mkdir projects",
-				Hint:        "make directory",
-				Explanation: "mkdir creates a new directory",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "mkdir",
-				Prompt:  "What does mkdir stand for?",
-				Options: []string{
-					"Make directory",
-					"Move directory",
-					"Modify directory",
-					"Mark directory",
-				},
-				Expected:    "0",
-				Hint:        "It MAKES something",
-				Explanation: "mkdir = make directory",
-			},
-			{
-				Type:          ChallengeFixError,
-				SkillID:       "mkdir",
-				Prompt:        "Fix this command to create a 'data' directory:",
-				BrokenCommand: "mkdr data",
-				Expected:      "mkdir data",
-				Hint:          "Check the spelling of the command",
-				Explanation:   "It's mkdir (make directory), not mkdr",
-			},
-		}
-	case "touch":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "touch",
-				Prompt:      "Create an empty file called 'notes.txt'",
-				Expected:    "touch notes.txt",
-				Hint:        "The command 'touches' files into existence",
-				Explanation: "touch creates empty files",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "touch",
-				Prompt:  "What happens if you touch a file that already exists?",
-				Options: []string{
-					"Updates the timestamp",
-					"Deletes the file",
-					"Shows an error",
-					"Creates a backup",
-				},
-				Expected:    "0",
-				Hint:        "It 'touches' the file gently",
-				Explanation: "touch updates the modification time of existing files",
-			},
-		}
-	case "tmux-new":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "tmux-new",
-				Prompt:      "Start a new tmux session named 'work'",
-				Expected:    "tmux new -s work",
-				Hint:        "tmux new -s <name>",
-				Explanation: "tmux new -s creates a named session",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "tmux-new",
-				Prompt:  "What does the -s flag do in 'tmux new -s'?",
-				Options: []string{
-					"Names the session",
-					"Starts silently",
-					"Shows status",
-					"Saves the session",
-				},
-				Expected:    "0",
-				Hint:        "-s for session name",
-				Explanation: "-s lets you give the session a name for easy identification",
-			},
-			{
-				Type:          ChallengeFixError,
-				SkillID:       "tmux-new",
-				Prompt:        "Fix this command to create a session named 'dev':",
-				BrokenCommand: "tmux new dev",
-				Expected:      "tmux new -s dev",
-				Hint:          "You need a flag to specify the name",
-				Explanation:   "Use -s to name the session: tmux new -s <name>",
-			},
-		}
-	case "tmux-detach":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "tmux-detach",
-				Prompt:      "Detach from current tmux session (key combo)",
-				Expected:    "Ctrl-b d",
-				Hint:        "Prefix key + d",
-				Explanation: "Ctrl-b is the prefix, then d for detach",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "tmux-detach",
-				Prompt:  "What is the default tmux prefix key?",
-				Options: []string{
-					"Ctrl-b",
-					"Ctrl-a",
-					"Ctrl-t",
-					"Ctrl-x",
-				},
-				Expected:    "0",
-				Hint:        "b for... tmux? (it's just the default)",
-				Explanation: "Ctrl-b is tmux's default prefix (many change it to Ctrl-a)",
-			},
-		}
-	case "tmux-attach":
-		return []Challenge{
-			{
-				Type:        ChallengeTypeCommand,
-				SkillID:     "tmux-attach",
-				Prompt:      "Attach to a tmux session named 'work'",
-				Expected:    "tmux attach -t work",
-				Hint:        "tmux attach -t <name>",
-				Explanation: "attach -t lets you reconnect to a named session",
-			},
-			{
-				Type:    ChallengeMultipleChoice,
-				SkillID: "tmux-attach",
-				Prompt:  "What does -t stand for in 'tmux attach -t'?",
-				Options: []string{
-					"Target session",
-					"Terminal",
-					"Time",
-					"Tab",
-				},
-				Expected:    "0",
-				Hint:        "You're targeting a specific session",
-				Explanation: "-t specifies the target session to attach to",
-			},
-		}
-	default:
-		return nil
+	allChallenges := getAllChallenges()
+	if challenges, ok := allChallenges[skillID]; ok {
+		return challenges
 	}
+	return nil
 }
 
-// getDefaultChallenges returns starter challenges if none generated
+// getDefaultChallenges returns starter challenges if none generated.
 func getDefaultChallenges() []Challenge {
 	return getChallengesForSkill("pwd")
 }
 
-// Init implements tea.Model for LessonModel
+// Init implements tea.Model for LessonModel.
 func (m *LessonModel) Init() tea.Cmd {
 	if m.IsSpeedRound {
 		return tickCmd()
@@ -497,7 +192,7 @@ func (m *LessonModel) Init() tea.Cmd {
 	return nil
 }
 
-// Update implements tea.Model for LessonModel
+// Update implements tea.Model for LessonModel.
 func (m *LessonModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
@@ -521,7 +216,7 @@ func (m *LessonModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleKeypress processes input during lesson
+// handleKeypress processes input during lesson.
 func (m *LessonModel) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.ShowFeedback {
 		// Any key continues to next challenge
@@ -578,7 +273,7 @@ func (m *LessonModel) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleMultipleChoiceInput processes input for multiple choice questions
+// handleMultipleChoiceInput processes input for multiple choice questions.
 func (m *LessonModel) handleMultipleChoiceInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	challenge := m.Challenges[m.CurrentIndex]
 	numOptions := len(challenge.Options)
@@ -623,7 +318,7 @@ func (m *LessonModel) handleMultipleChoiceInput(msg tea.KeyMsg) (tea.Model, tea.
 	return m, nil
 }
 
-// checkAnswer evaluates the user's response
+// checkAnswer evaluates the user's response.
 func (m *LessonModel) checkAnswer() {
 	if m.CurrentIndex >= len(m.Challenges) {
 		return
@@ -637,7 +332,7 @@ func (m *LessonModel) checkAnswer() {
 	case ChallengeMultipleChoice, ChallengePredictOutput:
 		// For multiple choice, Expected contains the correct option index as string ("0", "1", etc.)
 		expectedIdx := 0
-		fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
+		_, _ = fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
 		m.WasCorrect = m.SelectedOption == expectedIdx
 
 	case ChallengeFixError:
@@ -688,7 +383,9 @@ func (m *LessonModel) checkAnswer() {
 	m.ShowFeedback = true
 }
 
-// View renders the lesson screen
+// View renders the lesson screen.
+//
+//nolint:funlen // View function has many UI components
 func (m *LessonModel) View() string {
 	if m.Done {
 		return m.renderComplete()
@@ -776,7 +473,7 @@ func (m *LessonModel) View() string {
 	)
 }
 
-// renderTypeCommand renders a type-the-command challenge
+// renderTypeCommand renders a type-the-command challenge.
 func (m *LessonModel) renderTypeCommand(challenge Challenge) (string, string) {
 	prompt := BoxStyle.Render(
 		SubtitleStyle.Render(challenge.Prompt),
@@ -793,7 +490,7 @@ func (m *LessonModel) renderTypeCommand(challenge Challenge) (string, string) {
 	return prompt, inputArea
 }
 
-// renderMultipleChoice renders a multiple choice challenge
+// renderMultipleChoice renders a multiple choice challenge.
 func (m *LessonModel) renderMultipleChoice(challenge Challenge) (string, string) {
 	var promptText string
 	if challenge.Type == ChallengePredictOutput {
@@ -817,11 +514,12 @@ func (m *LessonModel) renderMultipleChoice(challenge Challenge) (string, string)
 		}
 		if m.ShowFeedback {
 			expectedIdx := 0
-			fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
-			if i == expectedIdx {
+			_, _ = fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
+			switch i {
+			case expectedIdx:
 				style = SuccessStyle
 				prefix = "✓ "
-			} else if i == m.SelectedOption {
+			case m.SelectedOption:
 				style = DangerStyle
 				prefix = "✗ "
 			}
@@ -833,7 +531,7 @@ func (m *LessonModel) renderMultipleChoice(challenge Challenge) (string, string)
 	return prompt, inputArea
 }
 
-// renderFixError renders a fix-the-error challenge
+// renderFixError renders a fix-the-error challenge.
 func (m *LessonModel) renderFixError(challenge Challenge) (string, string) {
 	promptText := challenge.Prompt + "\n\n" + DangerStyle.Render("Broken: ") +
 		TerminalStyle.Render(CommandStyle.Render(challenge.BrokenCommand))
@@ -850,7 +548,9 @@ func (m *LessonModel) renderFixError(challenge Challenge) (string, string) {
 	return prompt, inputArea
 }
 
-// renderFeedback renders the feedback after answering
+// renderFeedback renders the feedback after answering.
+//
+//nolint:nestif // XP calculation has conditional logic
 func (m *LessonModel) renderFeedback(challenge Challenge) string {
 	if !m.ShowFeedback {
 		return ""
@@ -879,7 +579,7 @@ func (m *LessonModel) renderFeedback(challenge Challenge) string {
 		switch challenge.Type {
 		case ChallengeMultipleChoice, ChallengePredictOutput:
 			expectedIdx := 0
-			fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
+			_, _ = fmt.Sscanf(challenge.Expected, "%d", &expectedIdx)
 			if expectedIdx < len(challenge.Options) {
 				feedback += MutedStyle.Render("Answer: ") + CommandStyle.Render(challenge.Options[expectedIdx]) + "\n"
 			}
@@ -893,18 +593,21 @@ func (m *LessonModel) renderFeedback(challenge Challenge) string {
 	return feedback
 }
 
-// renderComplete shows the end-of-lesson summary
+// renderComplete shows the end-of-lesson summary.
+//
+//nolint:funlen,nestif // Complex summary with many stats
 func (m *LessonModel) renderComplete() string {
 	var title string
 	var motivation string
 
 	if m.IsSpeedRound {
 		// Speed round results
-		if m.SpeedTimeLeft <= 0 {
+		switch {
+		case m.SpeedTimeLeft <= 0:
 			title = DangerStyle.Render("⏱️  Time's up!")
-		} else if m.Hearts <= 0 {
+		case m.Hearts <= 0:
 			title = DangerStyle.Render("💔 Wrong answer!")
-		} else {
+		default:
 			title = SuccessStyle.Render("⚡ Speed Round Complete!")
 		}
 
@@ -930,11 +633,12 @@ func (m *LessonModel) renderComplete() string {
 			m.Combo,
 		)
 
-		if qpm > 10 {
+		switch {
+		case qpm > 10:
 			motivation = AccentStyle.Render("⚡ LIGHTNING FAST! You're a terminal ninja!")
-		} else if qpm > 5 {
+		case qpm > 5:
 			motivation = AccentStyle.Render("🐢💨 Turbo turtle mode activated!")
-		} else {
+		default:
 			motivation = MutedStyle.Render("🐢 Speed comes with practice. Keep at it!")
 		}
 
@@ -967,11 +671,12 @@ func (m *LessonModel) renderComplete() string {
 		m.Combo,
 	)
 
-	if m.XPEarned > 50 {
+	switch {
+	case m.XPEarned > 50:
 		motivation = AccentStyle.Render("🐢 Turtle-ific! You're on fire!")
-	} else if m.XPEarned > 20 {
+	case m.XPEarned > 20:
 		motivation = AccentStyle.Render("🐢 Slow and steady wins the race!")
-	} else {
+	default:
 		motivation = MutedStyle.Render("🐢 Every step counts. Keep going!")
 	}
 

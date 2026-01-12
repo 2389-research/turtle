@@ -13,7 +13,7 @@ import (
 	"github.com/2389-research/turtle/internal/skills"
 )
 
-// View represents the current screen
+// View represents the current screen.
 type View int
 
 const (
@@ -24,7 +24,7 @@ const (
 	ViewSettings
 )
 
-// Model is the main application state
+// Model is the main application state.
 type Model struct {
 	CurrentView View
 	Width       int
@@ -37,7 +37,7 @@ type Model struct {
 	quitting    bool
 }
 
-// NewModel creates the initial application state
+// NewModel creates the initial application state.
 func NewModel() Model {
 	graph := buildDefaultSkillGraph()
 	savePath := progress.GetDefaultPath()
@@ -60,19 +60,19 @@ func NewModel() Model {
 	}
 }
 
-// Init implements tea.Model
+// Init implements tea.Model.
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// save persists the current progress to disk
+// save persists the current progress to disk.
 func (m *Model) save() {
 	if m.SavePath != "" {
 		_ = progress.Save(m.Progress, m.SavePath)
 	}
 }
 
-// Update implements tea.Model
+// Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -85,19 +85,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Delegate to sub-views
-	switch m.CurrentView {
-	case ViewLesson:
-		if m.LessonModel != nil {
-			newLesson, cmd := m.LessonModel.Update(msg)
-			m.LessonModel = newLesson.(*LessonModel)
-			return m, cmd
-		}
+	if m.CurrentView == ViewLesson && m.LessonModel != nil {
+		newLesson, cmd := m.LessonModel.Update(msg)
+		m.LessonModel = newLesson.(*LessonModel)
+		return m, cmd
 	}
 
 	return m, nil
 }
 
-// handleKeypress processes keyboard input
+// handleKeypress processes keyboard input.
 func (m Model) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Global keys
 	switch msg.String() {
@@ -138,7 +135,7 @@ func (m Model) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleHomeKeys handles input on the home screen
+// handleHomeKeys handles input on the home screen.
 func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	menuItems := []string{"Start Practice", "Speed Round", "Skill Tree", "Stats", "Quit"}
 
@@ -176,7 +173,7 @@ func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleSkillTreeKeys handles input on skill tree view
+// handleSkillTreeKeys handles input on skill tree view.
 func (m Model) handleSkillTreeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "backspace":
@@ -185,7 +182,7 @@ func (m Model) handleSkillTreeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleStatsKeys handles input on stats view
+// handleStatsKeys handles input on stats view.
 func (m Model) handleStatsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc", "backspace":
@@ -194,7 +191,7 @@ func (m Model) handleStatsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View implements tea.Model
+// View implements tea.Model.
 func (m Model) View() string {
 	if m.quitting {
 		return "\n  🐢 See you next time! Keep practicing!\n\n"
@@ -217,7 +214,7 @@ func (m Model) View() string {
 	}
 }
 
-// renderHome renders the main menu
+// renderHome renders the main menu.
 func (m Model) renderHome() string {
 	// Header with stats
 	header := m.renderHeader()
@@ -253,7 +250,7 @@ func (m Model) renderHome() string {
 	return lipgloss.JoinVertical(lipgloss.Left, content, "", footer)
 }
 
-// renderHeader shows XP, level, streak
+// renderHeader shows XP, level, streak.
 func (m Model) renderHeader() string {
 	turtle := TitleStyle.Render("🐢 TURTLE")
 
@@ -284,7 +281,7 @@ func (m Model) renderHeader() string {
 	)
 }
 
-// renderTodaysGoals shows what the user should practice today
+// renderTodaysGoals shows what the user should practice today.
 func (m Model) renderTodaysGoals() string {
 	title := SubtitleStyle.Render("TODAY'S TRAINING")
 
@@ -323,7 +320,7 @@ func (m Model) renderTodaysGoals() string {
 	))
 }
 
-// renderSkillTree shows the skill progression tree
+// renderSkillTree shows the skill progression tree.
 func (m Model) renderSkillTree() string {
 	title := TitleStyle.Render("🌳 SKILL TREE")
 
@@ -350,13 +347,14 @@ func (m Model) renderSkillTree() string {
 
 			// Status indicator
 			var status string
-			if strength == 0 {
+			switch {
+			case strength == 0:
 				status = MutedStyle.Render("○")
-			} else if strength < skills.CrackThreshold {
+			case strength < skills.CrackThreshold:
 				status = DangerStyle.Render("◐") // cracking
-			} else if strength < skills.UnlockThreshold {
+			case strength < skills.UnlockThreshold:
 				status = AccentStyle.Render("◑")
-			} else {
+			default:
 				status = SuccessStyle.Render("●")
 			}
 
@@ -378,7 +376,7 @@ func (m Model) renderSkillTree() string {
 	return lipgloss.JoinVertical(lipgloss.Left, title, content, "", footer)
 }
 
-// renderStats shows detailed user statistics
+// renderStats shows detailed user statistics.
 func (m Model) renderStats() string {
 	title := TitleStyle.Render("📊 STATISTICS")
 

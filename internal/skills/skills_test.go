@@ -157,10 +157,10 @@ func TestCategoryUnlocking(t *testing.T) {
 
 	// Tmux category requires navigation mastery
 	graph.AddSkill(&Skill{
-		ID:                   "tmux-why",
-		Category:             CategoryTmuxBasics,
-		RequiresCategory:     CategoryNavigation,
-		CategoryThreshold:    0.7, // Need 70% avg strength in navigation
+		ID:                "tmux-why",
+		Category:          CategoryTmuxBasics,
+		RequiresCategory:  CategoryNavigation,
+		CategoryThreshold: 0.7, // Need 70% avg strength in navigation
 	})
 
 	progress := NewUserProgress()
@@ -253,7 +253,7 @@ func TestDueSkills(t *testing.T) {
 	}
 
 	// Simulate time passing
-	progress.SimulateDecay("pwd", 2)  // 2 days
+	progress.SimulateDecay("pwd", 2) // 2 days
 	progress.SimulateDecay("ls", 10) // 10 days
 
 	due = graph.GetDueSkills(progress)
@@ -263,7 +263,7 @@ func TestDueSkills(t *testing.T) {
 	}
 }
 
-// Helper
+// Helper.
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {

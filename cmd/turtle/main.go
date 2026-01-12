@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -12,10 +13,20 @@ import (
 	"github.com/2389-research/turtle/internal/tui"
 )
 
+var version = "dev"
+
 func main() {
+	showVersion := flag.Bool("version", false, "Show version and exit")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("turtle %s\n", version)
+		os.Exit(0)
+	}
+
 	// Create the Bubble Tea program
 	p := tea.NewProgram(
-		tui.NewModel(),
+		tui.NewMissionTUI(),
 		tea.WithAltScreen(),       // Use alternate screen buffer
 		tea.WithMouseCellMotion(), // Enable mouse support
 	)

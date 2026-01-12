@@ -17,7 +17,7 @@ func TestSaveAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	savePath := filepath.Join(tmpDir, "progress.json")
 
@@ -93,7 +93,7 @@ func TestEnsureDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	nestedPath := filepath.Join(tmpDir, "a", "b", "c", "progress.json")
 

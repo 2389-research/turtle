@@ -5,7 +5,9 @@ package tui
 
 import "github.com/2389-research/turtle/internal/skills"
 
-// buildDefaultSkillGraph creates the full learning curriculum
+// buildDefaultSkillGraph creates the full learning curriculum.
+//
+//nolint:funlen // Data definition function
 func buildDefaultSkillGraph() *skills.SkillGraph {
 	graph := skills.NewSkillGraph()
 
@@ -102,6 +104,102 @@ func buildDefaultSkillGraph() *skills.SkillGraph {
 		Description:   "Display file contents",
 		Category:      skills.CategoryFileOps,
 		Prerequisites: []string{"touch"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "echo",
+		Name:          "echo",
+		Description:   "Print text to terminal",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"pwd"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "head",
+		Name:          "head",
+		Description:   "View first lines of a file",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"cat"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "tail",
+		Name:          "tail",
+		Description:   "View last lines of a file",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"head"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "less",
+		Name:          "less",
+		Description:   "Page through files",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"cat"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "grep",
+		Name:          "grep",
+		Description:   "Search for patterns in files",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"cat"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "find",
+		Name:          "find",
+		Description:   "Find files by name or attributes",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"ls"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "pipes",
+		Name:          "Pipes |",
+		Description:   "Connect commands together",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"grep"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "redirect",
+		Name:          "Redirect > >>",
+		Description:   "Send output to files",
+		Category:      skills.CategoryFileOps,
+		Prerequisites: []string{"echo"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "history",
+		Name:          "history",
+		Description:   "View and reuse past commands",
+		Category:      skills.CategoryNavigation,
+		Prerequisites: []string{"cd"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "man",
+		Name:          "man",
+		Description:   "Read manual pages",
+		Category:      skills.CategoryNavigation,
+		Prerequisites: []string{"ls"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "which",
+		Name:          "which",
+		Description:   "Find where a command lives",
+		Category:      skills.CategoryNavigation,
+		Prerequisites: []string{"ls"},
+	})
+
+	graph.AddSkill(&skills.Skill{
+		ID:            "clear",
+		Name:          "clear",
+		Description:   "Clear the terminal screen",
+		Category:      skills.CategoryNavigation,
+		Prerequisites: []string{"pwd"},
 	})
 
 	// ===================

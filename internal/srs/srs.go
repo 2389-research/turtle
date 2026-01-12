@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	// DefaultEaseFactor is the starting ease factor for new cards (2.5 is standard SM-2)
+	// DefaultEaseFactor is the starting ease factor for new cards (2.5 is standard SM-2).
 	DefaultEaseFactor = 2.5
-	// MinEaseFactor prevents cards from becoming impossibly hard
+	// MinEaseFactor prevents cards from becoming impossibly hard.
 	MinEaseFactor = 1.3
 )
 
-// Card represents a single learnable skill tracked by the SRS system
+// Card represents a single learnable skill tracked by the SRS system.
 type Card struct {
 	SkillID      string
 	EaseFactor   float64
@@ -24,7 +24,7 @@ type Card struct {
 	LastReviewed time.Time
 }
 
-// NewCard creates a new card for tracking a skill
+// NewCard creates a new card for tracking a skill.
 func NewCard(skillID string) *Card {
 	return &Card{
 		SkillID:      skillID,
@@ -55,7 +55,7 @@ func (c *Card) Review(grade int) {
 
 	// Update ease factor using SM-2 formula
 	// EF' = EF + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02))
-	c.EaseFactor = c.EaseFactor + (0.1 - float64(5-grade)*(0.08+float64(5-grade)*0.02))
+	c.EaseFactor += 0.1 - float64(5-grade)*(0.08+float64(5-grade)*0.02)
 
 	// Enforce minimum ease factor
 	if c.EaseFactor < MinEaseFactor {
@@ -82,7 +82,7 @@ func (c *Card) Review(grade int) {
 	c.LastReviewed = time.Now()
 }
 
-// NextReviewDate returns when this card should next be reviewed
+// NextReviewDate returns when this card should next be reviewed.
 func (c *Card) NextReviewDate() time.Time {
 	if c.LastReviewed.IsZero() {
 		return time.Now() // New card is due immediately
@@ -90,7 +90,7 @@ func (c *Card) NextReviewDate() time.Time {
 	return c.LastReviewed.AddDate(0, 0, c.Interval)
 }
 
-// IsDue returns true if the card is due for review
+// IsDue returns true if the card is due for review.
 func (c *Card) IsDue() bool {
 	if c.LastReviewed.IsZero() {
 		return true // New cards are always due
@@ -99,7 +99,7 @@ func (c *Card) IsDue() bool {
 }
 
 // Strength returns a 0.0-1.0 value representing mastery of this skill
-// Takes into account repetitions, ease factor, and time since last review
+// Takes into account repetitions, ease factor, and time since last review.
 func (c *Card) Strength() float64 {
 	if c.Repetitions == 0 && c.LastReviewed.IsZero() {
 		return 0 // Never practiced
@@ -131,7 +131,7 @@ func (c *Card) Strength() float64 {
 }
 
 // CalculateGrade determines the quality grade based on correctness and response time
-// This translates user performance into SM-2 grade (0-5)
+// This translates user performance into SM-2 grade (0-5).
 func CalculateGrade(correct bool, responseTimeMs int64) int {
 	if correct {
 		// Fast correct (< 1s) = perfect

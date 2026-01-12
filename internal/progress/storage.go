@@ -13,17 +13,17 @@ import (
 	"github.com/2389-research/turtle/internal/srs"
 )
 
-// SaveData is the serializable representation of user progress
+// SaveData is the serializable representation of user progress.
 type SaveData struct {
-	XP            int                `json:"xp"`
-	Level         int                `json:"level"`
-	CurrentStreak int                `json:"current_streak"`
-	BestStreak    int                `json:"best_streak"`
-	LastActive    time.Time          `json:"last_active"`
+	XP            int                  `json:"xp"`
+	Level         int                  `json:"level"`
+	CurrentStreak int                  `json:"current_streak"`
+	BestStreak    int                  `json:"best_streak"`
+	LastActive    time.Time            `json:"last_active"`
 	Cards         map[string]*CardData `json:"cards"`
 }
 
-// CardData is the serializable representation of an SRS card
+// CardData is the serializable representation of an SRS card.
 type CardData struct {
 	SkillID      string    `json:"skill_id"`
 	EaseFactor   float64   `json:"ease_factor"`
@@ -32,7 +32,7 @@ type CardData struct {
 	LastReviewed time.Time `json:"last_reviewed"`
 }
 
-// GetDefaultPath returns the default save file location
+// GetDefaultPath returns the default save file location.
 func GetDefaultPath() string {
 	// Use XDG_DATA_HOME if set, otherwise ~/.local/share
 	dataHome := os.Getenv("XDG_DATA_HOME")
@@ -48,11 +48,11 @@ func GetDefaultPath() string {
 	return filepath.Join(dataHome, "turtle", "progress.json")
 }
 
-// Save persists user progress to disk
+// Save persists user progress to disk.
 func Save(progress *skills.UserProgress, path string) error {
 	// Ensure directory exists
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil { //nolint:gosec // User data dir needs group readable
 		return err
 	}
 
@@ -84,14 +84,14 @@ func Save(progress *skills.UserProgress, path string) error {
 
 	// Write atomically using temp file
 	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, jsonData, 0644); err != nil {
+	if err := os.WriteFile(tmpPath, jsonData, 0644); err != nil { //nolint:gosec // User data file needs group readable
 		return err
 	}
 
 	return os.Rename(tmpPath, path)
 }
 
-// Load reads user progress from disk
+// Load reads user progress from disk.
 func Load(path string) (*skills.UserProgress, error) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -100,7 +100,7 @@ func Load(path string) (*skills.UserProgress, error) {
 	}
 
 	// Read file
-	jsonData, err := os.ReadFile(path)
+	jsonData, err := os.ReadFile(path) //nolint:gosec // Path is from GetDefaultPath, not user input
 	if err != nil {
 		return nil, err
 	}

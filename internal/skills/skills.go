@@ -9,7 +9,7 @@ import (
 	"github.com/2389-research/turtle/internal/srs"
 )
 
-// Skill categories for organizing the learning path
+// Skill categories for organizing the learning path.
 type Category string
 
 const (
@@ -21,14 +21,14 @@ const (
 	CategoryAdvanced    Category = "advanced"
 )
 
-// Thresholds for game mechanics
+// Thresholds for game mechanics.
 const (
 	UnlockThreshold = 0.6 // 60% strength to unlock dependent skills
 	CrackThreshold  = 0.4 // Below 40% = skill is "cracking"
 	XPPerLevel      = 100 // XP required per level
 )
 
-// Skill represents a learnable concept in the skill tree
+// Skill represents a learnable concept in the skill tree.
 type Skill struct {
 	ID                string
 	Name              string
@@ -39,24 +39,24 @@ type Skill struct {
 	CategoryThreshold float64  // Required avg strength in RequiresCategory
 }
 
-// SkillGraph manages the entire skill tree and relationships
+// SkillGraph manages the entire skill tree and relationships.
 type SkillGraph struct {
 	Skills map[string]*Skill
 }
 
-// NewSkillGraph creates an empty skill graph
+// NewSkillGraph creates an empty skill graph.
 func NewSkillGraph() *SkillGraph {
 	return &SkillGraph{
 		Skills: make(map[string]*Skill),
 	}
 }
 
-// AddSkill registers a skill in the graph
+// AddSkill registers a skill in the graph.
 func (g *SkillGraph) AddSkill(skill *Skill) {
 	g.Skills[skill.ID] = skill
 }
 
-// GetPrerequisites returns the prerequisite skill IDs for a skill
+// GetPrerequisites returns the prerequisite skill IDs for a skill.
 func (g *SkillGraph) GetPrerequisites(skillID string) []string {
 	skill, ok := g.Skills[skillID]
 	if !ok {
@@ -65,7 +65,7 @@ func (g *SkillGraph) GetPrerequisites(skillID string) []string {
 	return skill.Prerequisites
 }
 
-// GetSkillsByCategory returns all skills in a category
+// GetSkillsByCategory returns all skills in a category.
 func (g *SkillGraph) GetSkillsByCategory(cat Category) []string {
 	var result []string
 	for id, skill := range g.Skills {
@@ -76,7 +76,7 @@ func (g *SkillGraph) GetSkillsByCategory(cat Category) []string {
 	return result
 }
 
-// GetUnlockedSkills returns all skills the user can currently practice
+// GetUnlockedSkills returns all skills the user can currently practice.
 func (g *SkillGraph) GetUnlockedSkills(progress *UserProgress) []string {
 	var unlocked []string
 
@@ -89,7 +89,7 @@ func (g *SkillGraph) GetUnlockedSkills(progress *UserProgress) []string {
 	return unlocked
 }
 
-// isUnlocked checks if a specific skill is unlocked for the user
+// isUnlocked checks if a specific skill is unlocked for the user.
 func (g *SkillGraph) isUnlocked(skill *Skill, progress *UserProgress) bool {
 	// Check individual prerequisites
 	for _, prereqID := range skill.Prerequisites {
@@ -109,7 +109,7 @@ func (g *SkillGraph) isUnlocked(skill *Skill, progress *UserProgress) bool {
 	return true
 }
 
-// getCategoryAvgStrength calculates average strength across a category
+// getCategoryAvgStrength calculates average strength across a category.
 func (g *SkillGraph) getCategoryAvgStrength(cat Category, progress *UserProgress) float64 {
 	skills := g.GetSkillsByCategory(cat)
 	if len(skills) == 0 {
@@ -123,7 +123,7 @@ func (g *SkillGraph) getCategoryAvgStrength(cat Category, progress *UserProgress
 	return total / float64(len(skills))
 }
 
-// GetDueSkills returns skills that need review based on SRS scheduling
+// GetDueSkills returns skills that need review based on SRS scheduling.
 func (g *SkillGraph) GetDueSkills(progress *UserProgress) []string {
 	var due []string
 
@@ -137,7 +137,7 @@ func (g *SkillGraph) GetDueSkills(progress *UserProgress) []string {
 	return due
 }
 
-// UserProgress tracks a user's learning state
+// UserProgress tracks a user's learning state.
 type UserProgress struct {
 	XP            int
 	Level         int
@@ -150,7 +150,7 @@ type UserProgress struct {
 	testNow *time.Time
 }
 
-// NewUserProgress creates a fresh user progress tracker
+// NewUserProgress creates a fresh user progress tracker.
 func NewUserProgress() *UserProgress {
 	return &UserProgress{
 		XP:            0,
@@ -163,7 +163,7 @@ func NewUserProgress() *UserProgress {
 	}
 }
 
-// now returns the current time (or simulated time for testing)
+// now returns the current time (or simulated time for testing).
 func (p *UserProgress) now() time.Time {
 	if p.testNow != nil {
 		return *p.testNow
@@ -171,7 +171,7 @@ func (p *UserProgress) now() time.Time {
 	return time.Now()
 }
 
-// GetStrength returns the current strength for a skill
+// GetStrength returns the current strength for a skill.
 func (p *UserProgress) GetStrength(skillID string) float64 {
 	card := p.Cards[skillID]
 	if card == nil {
@@ -180,7 +180,7 @@ func (p *UserProgress) GetStrength(skillID string) float64 {
 	return card.Strength()
 }
 
-// SetStrength manually sets a skill's strength (for testing/simulation)
+// SetStrength manually sets a skill's strength (for testing/simulation).
 func (p *UserProgress) SetStrength(skillID string, strength float64) {
 	card := p.getOrCreateCard(skillID)
 	// Approximate the strength by setting repetitions
@@ -191,12 +191,12 @@ func (p *UserProgress) SetStrength(skillID string, strength float64) {
 	}
 }
 
-// GetCard returns the SRS card for a skill, or nil if not practiced
+// GetCard returns the SRS card for a skill, or nil if not practiced.
 func (p *UserProgress) GetCard(skillID string) *srs.Card {
 	return p.Cards[skillID]
 }
 
-// getOrCreateCard ensures a card exists for a skill
+// getOrCreateCard ensures a card exists for a skill.
 func (p *UserProgress) getOrCreateCard(skillID string) *srs.Card {
 	if p.Cards[skillID] == nil {
 		p.Cards[skillID] = srs.NewCard(skillID)
@@ -204,13 +204,13 @@ func (p *UserProgress) getOrCreateCard(skillID string) *srs.Card {
 	return p.Cards[skillID]
 }
 
-// Practice records a practice session for a skill
+// Practice records a practice session for a skill.
 func (p *UserProgress) Practice(skillID string, grade int) {
 	card := p.getOrCreateCard(skillID)
 	card.Review(grade)
 }
 
-// IsCracking returns true if a skill's strength has dropped below the crack threshold
+// IsCracking returns true if a skill's strength has dropped below the crack threshold.
 func (p *UserProgress) IsCracking(skillID string) bool {
 	strength := p.GetStrength(skillID)
 	card := p.Cards[skillID]
@@ -223,7 +223,7 @@ func (p *UserProgress) IsCracking(skillID string) bool {
 	return strength < CrackThreshold
 }
 
-// SimulateDecay simulates the passage of time for testing decay mechanics
+// SimulateDecay simulates the passage of time for testing decay mechanics.
 func (p *UserProgress) SimulateDecay(skillID string, days int) {
 	card := p.Cards[skillID]
 	if card != nil {
@@ -231,7 +231,7 @@ func (p *UserProgress) SimulateDecay(skillID string, days int) {
 	}
 }
 
-// AddXP awards experience points and handles level ups
+// AddXP awards experience points and handles level ups.
 func (p *UserProgress) AddXP(amount int) {
 	p.XP += amount
 
@@ -242,7 +242,7 @@ func (p *UserProgress) AddXP(amount int) {
 	}
 }
 
-// RecordActivity records that the user practiced today (for streaks)
+// RecordActivity records that the user practiced today (for streaks).
 func (p *UserProgress) RecordActivity() {
 	now := p.now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -254,13 +254,14 @@ func (p *UserProgress) RecordActivity() {
 	} else {
 		daysSince := int(today.Sub(lastActiveDay).Hours() / 24)
 
-		if daysSince == 0 {
+		switch daysSince {
+		case 0:
 			// Already active today, no change
 			return
-		} else if daysSince == 1 {
+		case 1:
 			// Consecutive day
 			p.CurrentStreak++
-		} else {
+		default:
 			// Streak broken
 			p.CurrentStreak = 1
 		}
@@ -273,7 +274,7 @@ func (p *UserProgress) RecordActivity() {
 	p.LastActive = now
 }
 
-// SimulateNextDay advances the virtual clock by one day (for testing streaks)
+// SimulateNextDay advances the virtual clock by one day (for testing streaks).
 func (p *UserProgress) SimulateNextDay() {
 	current := p.now()
 	next := current.AddDate(0, 0, 1)
