@@ -74,9 +74,10 @@ type LessonModel struct {
 }
 
 // NewLessonModel creates a new practice session.
-func NewLessonModel(progress *skills.UserProgress, graph *skills.SkillGraph) *LessonModel {
-	// Generate challenges based on due skills and unlocked skills
-	challenges := generateChallenges(progress, graph)
+// If selectedSkills is nil or empty, all unlocked skills are used.
+func NewLessonModel(progress *skills.UserProgress, graph *skills.SkillGraph, selectedSkills []string) *LessonModel {
+	// Generate challenges based on selected skills (or all unlocked if none selected)
+	challenges := generateChallenges(progress, graph, selectedSkills)
 
 	return &LessonModel{
 		Progress:     progress,
@@ -92,9 +93,10 @@ func NewLessonModel(progress *skills.UserProgress, graph *skills.SkillGraph) *Le
 }
 
 // NewSpeedRoundModel creates a timed speed round session.
-func NewSpeedRoundModel(progress *skills.UserProgress, graph *skills.SkillGraph) *LessonModel {
+// If selectedSkills is nil or empty, all unlocked skills are used.
+func NewSpeedRoundModel(progress *skills.UserProgress, graph *skills.SkillGraph, selectedSkills []string) *LessonModel {
 	// Generate many quick challenges for speed round
-	challenges := generateSpeedChallenges(progress, graph)
+	challenges := generateSpeedChallenges(progress, graph, selectedSkills)
 
 	return &LessonModel{
 		Progress:      progress,
@@ -112,12 +114,19 @@ func NewSpeedRoundModel(progress *skills.UserProgress, graph *skills.SkillGraph)
 }
 
 // generateSpeedChallenges creates rapid-fire challenges for speed rounds.
-func generateSpeedChallenges(progress *skills.UserProgress, graph *skills.SkillGraph) []Challenge {
-	// Collect all quick challenges from unlocked skills
-	var allChallenges []Challenge
-	unlocked := graph.GetUnlockedSkills(progress)
+// If selectedSkills is nil or empty, all unlocked skills are used.
+func generateSpeedChallenges(progress *skills.UserProgress, graph *skills.SkillGraph, selectedSkills []string) []Challenge {
+	// Determine which skills to use
+	var skillsToUse []string
+	if len(selectedSkills) > 0 {
+		skillsToUse = selectedSkills
+	} else {
+		skillsToUse = graph.GetUnlockedSkills(progress)
+	}
 
-	for _, skillID := range unlocked {
+	// Collect all quick challenges from selected skills
+	var allChallenges []Challenge
+	for _, skillID := range skillsToUse {
 		skillChallenges := getChallengesForSkill(skillID)
 		// Only include type-command and multiple choice (quick to answer)
 		for _, c := range skillChallenges {
@@ -145,13 +154,19 @@ func generateSpeedChallenges(progress *skills.UserProgress, graph *skills.SkillG
 }
 
 // generateChallenges creates a set of challenges for this session.
-func generateChallenges(progress *skills.UserProgress, graph *skills.SkillGraph) []Challenge {
+// If selectedSkills is nil or empty, all unlocked skills are used.
+func generateChallenges(progress *skills.UserProgress, graph *skills.SkillGraph, selectedSkills []string) []Challenge {
 	var challenges []Challenge
 
-	// Get skills to practice (due for review + new unlocked)
-	unlocked := graph.GetUnlockedSkills(progress)
+	// Determine which skills to use
+	var skillsToUse []string
+	if len(selectedSkills) > 0 {
+		skillsToUse = selectedSkills
+	} else {
+		skillsToUse = graph.GetUnlockedSkills(progress)
+	}
 
-	for _, skillID := range unlocked {
+	for _, skillID := range skillsToUse {
 		// Add challenges for this skill
 		skillChallenges := getChallengesForSkill(skillID)
 		challenges = append(challenges, skillChallenges...)

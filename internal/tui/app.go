@@ -22,19 +22,21 @@ const (
 	ViewSkillTree
 	ViewStats
 	ViewSettings
+	ViewSkillSelect
 )
 
 // Model is the main application state.
 type Model struct {
-	CurrentView View
-	Width       int
-	Height      int
-	Progress    *skills.UserProgress
-	SkillGraph  *skills.SkillGraph
-	MenuIndex   int
-	LessonModel *LessonModel
-	SavePath    string
-	quitting    bool
+	CurrentView        View
+	Width              int
+	Height             int
+	Progress           *skills.UserProgress
+	SkillGraph         *skills.SkillGraph
+	MenuIndex          int
+	LessonModel        *LessonModel
+	SkillSelectorModel *SkillSelectorModel
+	SavePath           string
+	quitting           bool
 }
 
 // NewModel creates the initial application state.
@@ -130,6 +132,8 @@ func (m Model) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleSkillTreeKeys(msg)
 	case ViewStats:
 		return m.handleStatsKeys(msg)
+	case ViewSkillSelect:
+		return m.handleSkillSelectKeys(msg)
 	}
 
 	return m, nil
@@ -137,7 +141,7 @@ func (m Model) handleKeypress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // handleHomeKeys handles input on the home screen.
 func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	menuItems := []string{"Start Practice", "Speed Round", "Skill Tree", "Stats", "Quit"}
+	menuItems := []string{"Quick Practice", "Select Skills...", "Speed Round", "Skill Tree", "Stats", "Quit"}
 
 	switch msg.String() {
 	case "up", "k":
@@ -152,19 +156,23 @@ func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter", " ":
 		switch m.MenuIndex {
-		case 0: // Start Practice
+		case 0: // Quick Practice - all unlocked skills
 			m.CurrentView = ViewLesson
-			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph)
+			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph, nil)
 			return m, nil
-		case 1: // Speed Round
+		case 1: // Select Skills
+			m.CurrentView = ViewSkillSelect
+			m.SkillSelectorModel = NewSkillSelectorModel(m.Progress, m.SkillGraph)
+			return m, nil
+		case 2: // Speed Round
 			m.CurrentView = ViewLesson
-			m.LessonModel = NewSpeedRoundModel(m.Progress, m.SkillGraph)
+			m.LessonModel = NewSpeedRoundModel(m.Progress, m.SkillGraph, nil)
 			return m, m.LessonModel.Init()
-		case 2: // Skill Tree
+		case 3: // Skill Tree
 			m.CurrentView = ViewSkillTree
-		case 3: // Stats
+		case 4: // Stats
 			m.CurrentView = ViewStats
-		case 4: // Quit
+		case 5: // Quit
 			m.quitting = true
 			return m, tea.Quit
 		}
@@ -191,6 +199,34 @@ func (m Model) handleStatsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// handleSkillSelectKeys handles input on skill selection view.
+func (m Model) handleSkillSelectKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.SkillSelectorModel == nil {
+		m.CurrentView = ViewHome
+		return m, nil
+	}
+
+	newSelector, cmd := m.SkillSelectorModel.Update(msg)
+	m.SkillSelectorModel = newSelector
+
+	// Check if selection is complete
+	if m.SkillSelectorModel.Done {
+		if m.SkillSelectorModel.Cancelled {
+			// User cancelled, go back to home
+			m.CurrentView = ViewHome
+			m.SkillSelectorModel = nil
+		} else {
+			// Start lesson with selected skills
+			selectedSkills := m.SkillSelectorModel.GetSelectedSkills()
+			m.CurrentView = ViewLesson
+			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph, selectedSkills)
+			m.SkillSelectorModel = nil
+		}
+	}
+
+	return m, cmd
+}
+
 // View implements tea.Model.
 func (m Model) View() string {
 	if m.quitting {
@@ -209,6 +245,11 @@ func (m Model) View() string {
 		return m.renderSkillTree()
 	case ViewStats:
 		return m.renderStats()
+	case ViewSkillSelect:
+		if m.SkillSelectorModel != nil {
+			return m.SkillSelectorModel.View()
+		}
+		return "Loading skill selector..."
 	default:
 		return "Unknown view"
 	}
@@ -220,7 +261,7 @@ func (m Model) renderHome() string {
 	header := m.renderHeader()
 
 	// Menu
-	menuItems := []string{"Start Practice", "Speed Round ⚡", "Skill Tree", "Stats", "Quit"}
+	menuItems := []string{"Quick Practice", "Select Skills...", "Speed Round ⚡", "Skill Tree", "Stats", "Quit"}
 	menu := "\n"
 	for i, item := range menuItems {
 		cursor := "  "

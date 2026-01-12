@@ -3,10 +3,72 @@
 
 package tui
 
+import (
+	"fmt"
+	"log"
+
+	"github.com/2389-research/turtle/internal/content"
+)
+
 // getAllChallenges returns the complete challenge database organized by skill ID.
-//
-//nolint:funlen // Data definition function
 func getAllChallenges() map[string][]Challenge {
+	rawChallenges, err := content.GetRawChallenges()
+	if err != nil {
+		log.Printf("Error loading challenges from YAML: %v, falling back to empty map", err)
+		return make(map[string][]Challenge)
+	}
+	return convertChallenges(rawChallenges)
+}
+
+// convertChallenges converts raw YAML challenges to Challenge types.
+func convertChallenges(raw map[string][]content.YAMLChallenge) map[string][]Challenge {
+	result := make(map[string][]Challenge)
+
+	for skillID, yamlChallenges := range raw {
+		challenges := make([]Challenge, 0, len(yamlChallenges))
+		for _, yc := range yamlChallenges {
+			c := Challenge{
+				SkillID:       skillID,
+				Prompt:        yc.Prompt,
+				Expected:      yc.Expected,
+				Hint:          yc.Hint,
+				Explanation:   yc.Explanation,
+				Options:       yc.Options,
+				BrokenCommand: yc.Broken,
+				CommandOutput: yc.Command,
+			}
+
+			// Map type string to ChallengeType
+			switch yc.Type {
+			case "command":
+				c.Type = ChallengeTypeCommand
+			case "multiple_choice":
+				c.Type = ChallengeMultipleChoice
+				c.Expected = fmt.Sprintf("%d", yc.Correct)
+			case "fix_error":
+				c.Type = ChallengeFixError
+			case "predict_output":
+				c.Type = ChallengePredictOutput
+				c.Expected = fmt.Sprintf("%d", yc.Correct)
+			case "translate":
+				c.Type = ChallengeTranslate
+			default:
+				c.Type = ChallengeTypeCommand
+			}
+
+			challenges = append(challenges, c)
+		}
+		result[skillID] = challenges
+	}
+
+	return result
+}
+
+// getAllChallengesLegacy returns the complete challenge database (legacy hardcoded version).
+// Kept for reference during migration.
+//
+//nolint:funlen,unused // Legacy data definition function
+func getAllChallengesLegacy() map[string][]Challenge {
 	return map[string][]Challenge{
 		// ====================
 		// NAVIGATION

@@ -42,6 +42,19 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
+brews:
+  - repository:
+      owner: 2389-research
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/2389-research/turtle"
+    description: "Duolingo-style terminal and tmux command trainer"
+    install: |
+      bin.install "turtle"
+    test: |
+      system "#{bin}/turtle", "--help"
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 

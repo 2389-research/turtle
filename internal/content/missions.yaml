@@ -1,0 +1,781 @@
+version: 1
+
+missions:
+  # Level 0: Orientation
+  - id: "0.1-where-am-i"
+    skill_id: pwd
+    level: 0
+    title: Where Am I?
+    briefing: |
+      You've just opened a terminal. You're somewhere in the filesystem,
+      but where? Find out your current location.
+    hint: There's a command that prints the working directory...
+    explanation: |
+      pwd = Print Working Directory. It shows the full path to where you are.
+      You're in /home/learner/projects.
+    commands: [pwd]
+    setup:
+      - cd: /home/learner/projects
+    goal:
+      always: true
+
+  - id: "0.2-whats-here"
+    skill_id: ls
+    level: 0
+    title: What's Here?
+    briefing: |
+      You know where you are. Now look around.
+      What files and folders are in this directory?
+    hint: Two letters. Short for 'list'.
+    explanation: |
+      ls = list. It shows you everything in the current directory.
+      You can see readme.txt, src/, and docs/.
+    commands: [ls]
+    setup:
+      - mkdir: /home/learner/projects
+      - touch: /home/learner/projects/readme.txt
+      - mkdir: /home/learner/projects/src
+      - mkdir: /home/learner/projects/docs
+      - cd: /home/learner/projects
+    goal:
+      always: true
+
+  - id: "0.3-go-home"
+    skill_id: cd
+    level: 0
+    title: Go Home
+    briefing: |
+      You're in /tmp. That's not where you belong.
+      Navigate to your home directory.
+    hint: cd without any arguments takes you home. Or try cd ~
+    explanation: |
+      cd = change directory. By itself, cd takes you home.
+      ~ is shorthand for your home directory.
+    commands: [cd, "cd ~"]
+    setup:
+      - mkdir: /tmp
+      - cd: /tmp
+    goal:
+      pwd_equals: /home/learner
+
+  - id: "0.4-enter-folder"
+    skill_id: cd
+    level: 0
+    title: Enter the Projects Folder
+    briefing: |
+      You're home. There's a 'projects' folder here. Go inside it.
+    hint: cd followed by the folder name
+    explanation: |
+      cd foldername moves you into that folder.
+      You can always use pwd to check where you ended up.
+    commands: ["cd projects"]
+    setup:
+      - mkdir: /home/learner/projects
+      - cd: /home/learner
+    goal:
+      pwd_equals: /home/learner/projects
+
+  - id: "0.5-go-up"
+    skill_id: cd
+    level: 0
+    title: Back Up One Level
+    briefing: |
+      You're deep in /home/learner/projects/src/utils.
+      Go up one level to the src folder.
+    hint: Two dots (..) means 'parent directory'
+    explanation: cd .. takes you up one level. .. always means 'the parent directory'.
+    commands: ["cd .."]
+    setup:
+      - mkdir: /home/learner/projects/src/utils
+      - cd: /home/learner/projects/src/utils
+    goal:
+      pwd_equals: /home/learner/projects/src
+
+  - id: "0.6-navigate-path"
+    skill_id: cd
+    level: 0
+    title: Navigate a Path
+    briefing: |
+      From /home/learner, get to /home/learner/documents/work in one command.
+    hint: You can type a path - cd folder/subfolder
+    explanation: |
+      You can navigate multiple levels at once: cd folder/subfolder.
+      This is faster than cd folder then cd subfolder.
+    commands: ["cd documents/work"]
+    setup:
+      - mkdir: /home/learner/documents/work
+      - cd: /home/learner
+    goal:
+      pwd_equals: /home/learner/documents/work
+
+  # Level 1: Reading the filesystem
+  - id: "1.1-hidden-file"
+    skill_id: ls
+    level: 1
+    title: Find the Hidden File
+    briefing: |
+      There's a hidden configuration file in this directory.
+      Normal ls won't show it. Find it.
+    hint: Hidden files start with a dot. ls has a flag to show ALL files...
+    explanation: |
+      ls -a shows ALL files, including hidden ones (files starting with .).
+      The .env file contains secrets!
+    commands: ["ls -a"]
+    setup:
+      - mkdir: /home/learner/project
+      - touch: /home/learner/project/readme.md
+      - touch: /home/learner/project/.env
+      - write_file:
+          path: /home/learner/project/.env
+          content: "SECRET_KEY=abc123\n"
+      - cd: /home/learner/project
+    goal:
+      always: true
+
+  - id: "1.2-absolute-path"
+    skill_id: cd
+    level: 1
+    title: Jump to Absolute Path
+    briefing: No matter where you are, get to /var/log using an absolute path.
+    hint: Absolute paths start with /
+    explanation: |
+      Absolute paths start with / and work from anywhere.
+      Relative paths depend on where you are.
+    commands: ["cd /var/log"]
+    setup:
+      - mkdir: /var/log
+      - touch: /var/log/system.log
+      - cd: /home/learner/documents
+    goal:
+      pwd_equals: /var/log
+
+  - id: "1.3-read-file"
+    skill_id: cat
+    level: 1
+    title: Read the Secret
+    briefing: There's a file called secret.txt in this directory. What's inside?
+    hint: cat displays file contents. Think of a cat knocking things off tables.
+    explanation: cat filename shows the contents of a file.
+    commands: ["cat secret.txt"]
+    setup:
+      - mkdir: /home/learner/mission
+      - write_file:
+          path: /home/learner/mission/secret.txt
+          content: "The password is: turtlepower\n"
+      - cd: /home/learner/mission
+    goal:
+      always: true
+
+  - id: "1.4-dot-directory"
+    skill_id: cd
+    level: 1
+    title: The Mysterious Dot
+    briefing: "Run: ls . - What does the single dot mean?"
+    hint: A single dot represents something special...
+    explanation: |
+      A single dot (.) means 'the current directory'.
+      ls . lists the current folder. This becomes useful later.
+    commands: ["ls ."]
+    setup:
+      - mkdir: /home/learner/test
+      - touch: /home/learner/test/file1.txt
+      - touch: /home/learner/test/file2.txt
+      - cd: /home/learner/test
+    goal:
+      always: true
+
+  - id: "1.5-long-listing"
+    skill_id: ls
+    level: 1
+    title: Get the Details
+    briefing: List the files with full details - sizes, dates, permissions.
+    hint: There's a 'long' format flag for ls...
+    explanation: ls -l gives the 'long' listing with permissions, owner, size, date.
+    commands: ["ls -l"]
+    setup:
+      - mkdir: /home/learner/project
+      - write_file:
+          path: /home/learner/project/big.txt
+          content: "datadatadatadatadatadatadatadatadatadata"
+      - touch: /home/learner/project/small.txt
+      - cd: /home/learner/project
+    goal:
+      always: true
+
+  # Level 2: File operations
+  - id: "2.1-create-dir"
+    skill_id: mkdir
+    level: 2
+    title: Build a Workspace
+    briefing: Create a new directory called 'workspace' in your home folder.
+    hint: mkdir = make directory
+    explanation: mkdir creates a new directory. Now you have a place to organize!
+    commands: ["mkdir workspace"]
+    setup:
+      - cd: /home/learner
+    goal:
+      and:
+        - path_exists: /home/learner/workspace
+        - is_dir: /home/learner/workspace
+
+  - id: "2.2-create-file"
+    skill_id: touch
+    level: 2
+    title: Create a Note
+    briefing: Create an empty file called 'notes.txt' in the current directory.
+    hint: touch creates empty files (or updates timestamps of existing ones)
+    explanation: touch creates an empty file.
+    commands: ["touch notes.txt"]
+    setup:
+      - mkdir: /home/learner/work
+      - cd: /home/learner/work
+    goal:
+      path_exists: /home/learner/work/notes.txt
+
+  - id: "2.3-copy-file"
+    skill_id: cp
+    level: 2
+    title: Backup the Config
+    briefing: There's a config.json here. Make a backup copy called config.backup.json
+    hint: cp source destination
+    explanation: cp copies files. Always make backups before editing important configs!
+    commands: ["cp config.json config.backup.json"]
+    setup:
+      - mkdir: /home/learner/app
+      - write_file:
+          path: /home/learner/app/config.json
+          content: "{\n  \"debug\": false\n}\n"
+      - cd: /home/learner/app
+    goal:
+      path_exists: /home/learner/app/config.backup.json
+
+  - id: "2.4-move-file"
+    skill_id: mv
+    level: 2
+    title: Organize the Download
+    briefing: There's a report.pdf in downloads/. Move it to documents/.
+    hint: mv moves files. It's also how you rename things.
+    explanation: mv moves files. Unlike cp, the original is gone.
+    commands: ["mv downloads/report.pdf documents/"]
+    setup:
+      - mkdir: /home/learner/downloads
+      - mkdir: /home/learner/documents
+      - touch: /home/learner/downloads/report.pdf
+      - cd: /home/learner
+    goal:
+      and:
+        - path_exists: /home/learner/documents/report.pdf
+        - not:
+            path_exists: /home/learner/downloads/report.pdf
+
+  - id: "2.5-rename-file"
+    skill_id: mv
+    level: 2
+    title: Fix the Typo
+    briefing: Someone created a file called 'importnat.txt'. Rename it to 'important.txt'.
+    hint: mv also renames when source and destination are in the same directory
+    explanation: mv oldname newname renames a file. There's no separate rename command!
+    commands: ["mv importnat.txt important.txt"]
+    setup:
+      - mkdir: /home/learner/docs
+      - touch: /home/learner/docs/importnat.txt
+      - cd: /home/learner/docs
+    goal:
+      and:
+        - path_exists: /home/learner/docs/important.txt
+        - not:
+            path_exists: /home/learner/docs/importnat.txt
+
+  - id: "2.6-delete-file"
+    skill_id: rm
+    level: 2
+    title: Clean Up
+    briefing: Delete the file called 'temp.txt'. Be careful - there's no undo!
+    hint: rm = remove. It's permanent.
+    explanation: rm permanently deletes files. There's no trash can!
+    commands: ["rm temp.txt"]
+    setup:
+      - mkdir: /home/learner/project
+      - touch: /home/learner/project/temp.txt
+      - touch: /home/learner/project/keep.txt
+      - cd: /home/learner/project
+    goal:
+      and:
+        - not:
+            path_exists: /home/learner/project/temp.txt
+        - path_exists: /home/learner/project/keep.txt
+
+  - id: "2.7-echo-to-file"
+    skill_id: redirect
+    level: 2
+    title: Leave a Note
+    briefing: Create a file called message.txt containing 'Hello World'
+    hint: echo prints text. > redirects output to a file.
+    explanation: echo text > file creates a file with that content.
+    commands: ["echo Hello World > message.txt"]
+    setup:
+      - mkdir: /home/learner/notes
+      - cd: /home/learner/notes
+    goal:
+      file_contains:
+        path: /home/learner/notes/message.txt
+        content: Hello World
+
+  - id: "2.8-organize-project"
+    skill_id: mkdir
+    level: 2
+    title: Organize a Project
+    briefing: Create a 'src' folder, then create a file called 'main.py' inside it.
+    hint: First mkdir, then touch (or touch src/main.py if src exists)
+    explanation: Real projects need organization. Create folders with mkdir, files with touch.
+    commands: ["mkdir src", "touch src/main.py"]
+    setup:
+      - mkdir: /home/learner/myproject
+      - cd: /home/learner/myproject
+    goal:
+      path_exists: /home/learner/myproject/src/main.py
+
+  # Level 3: Search + inspection
+  - id: "3.1-grep-basic"
+    skill_id: grep
+    level: 3
+    title: Find the Error
+    briefing: The log file has an error somewhere. Find the line containing 'ERROR'.
+    hint: grep searches for patterns inside files
+    explanation: grep pattern file shows all lines containing the pattern.
+    commands: ["grep ERROR app.log"]
+    setup:
+      - mkdir: /var/log
+      - write_file:
+          path: /var/log/app.log
+          content: |
+            2024-01-01 INFO: Server started
+            2024-01-01 INFO: Connection established
+            2024-01-01 ERROR: Database connection failed
+            2024-01-01 INFO: Retrying...
+            2024-01-01 INFO: Connection restored
+      - cd: /var/log
+    goal:
+      always: true
+
+  - id: "3.2-find-file"
+    skill_id: find
+    level: 3
+    title: Hunt for the Config
+    briefing: There's a file called 'config.yaml' somewhere in /home/learner. Find it.
+    hint: find searches for files by name. Use -name pattern
+    explanation: find startpath -name pattern searches for files.
+    commands: ["find . -name config.yaml", "find . -name \"config.yaml\""]
+    setup:
+      - mkdir: /home/learner/projects/secret/deeply/nested
+      - write_file:
+          path: /home/learner/projects/secret/deeply/nested/config.yaml
+          content: "key: value"
+      - cd: /home/learner
+    goal:
+      always: true
+
+  - id: "3.3-pipe-intro"
+    skill_id: pipes
+    level: 3
+    title: Chain Commands
+    briefing: List the files, but only show ones containing 'log' in the name.
+    hint: The | symbol sends output from one command to another
+    explanation: The pipe | sends output from one command as input to another.
+    commands: ["ls | grep log"]
+    setup:
+      - mkdir: /home/learner/logs
+      - touch: /home/learner/logs/app.log
+      - touch: /home/learner/logs/error.log
+      - touch: /home/learner/logs/readme.txt
+      - touch: /home/learner/logs/debug.log
+      - cd: /home/learner/logs
+    goal:
+      always: true
+
+  - id: "3.4-grep-recursive"
+    skill_id: grep
+    level: 3
+    title: Find All Debug Flags
+    briefing: Search ALL files in this directory for the word 'DEBUG'.
+    hint: grep -r searches recursively through directories
+    explanation: grep -r searches all files in a directory tree.
+    commands: ["grep -r DEBUG .", "grep DEBUG *"]
+    setup:
+      - mkdir: /home/learner/project
+      - write_file:
+          path: /home/learner/project/app.py
+          content: "DEBUG = True\nprint('hello')"
+      - write_file:
+          path: /home/learner/project/config.py
+          content: "# No debug here"
+      - write_file:
+          path: /home/learner/project/test.py
+          content: "DEBUG = False"
+      - cd: /home/learner/project
+    goal:
+      always: true
+
+  - id: "3.5-find-and-read"
+    skill_id: find
+    level: 3
+    title: Detective Work
+    briefing: Find the hidden .secret file somewhere under /home/learner, then read it.
+    hint: First find it with find, then read it with cat
+    explanation: Combining commands is powerful. find locates, cat reads.
+    commands: ["find . -name .secret", "cat stuff/more/.secret"]
+    setup:
+      - mkdir: /home/learner/stuff/more/things
+      - write_file:
+          path: /home/learner/stuff/more/.secret
+          content: "The treasure is buried under the old oak tree.\n"
+      - cd: /home/learner
+    goal:
+      always: true
+
+  # Level 4: Tmux basics
+  - id: "4.1-start-tmux"
+    skill_id: tmux-new
+    level: 4
+    title: Enter the Multiplexer
+    briefing: Start a new tmux session. Just type 'tmux' to begin.
+    hint: Simply run tmux
+    explanation: |
+      tmux is a terminal multiplexer - it lets you have multiple terminal
+      sessions in one window, and they persist even if you disconnect!
+    commands: [tmux]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.2-named-session"
+    skill_id: tmux-new
+    level: 4
+    title: Name Your Session
+    briefing: Create a new tmux session named 'work'. Named sessions are easier to manage.
+    hint: tmux new -s sessionname
+    explanation: |
+      tmux new -s name creates a named session.
+      When you have multiple sessions, names help you remember which is which.
+    commands: ["tmux new -s work", "tmux new-session -s work"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.3-detach"
+    skill_id: tmux-detach
+    level: 4
+    title: Step Away
+    briefing: |
+      You're in a tmux session. Detach from it without closing it.
+      The session will keep running!
+    hint: tmux detach (or the keyboard shortcut Ctrl-b d)
+    explanation: |
+      tmux detach leaves the session running in the background.
+      Your processes continue even when you're not attached!
+    commands: ["tmux detach", "tmux d"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.4-list-sessions"
+    skill_id: tmux-list
+    level: 4
+    title: What's Running?
+    briefing: You've detached. Now check what tmux sessions are running.
+    hint: tmux ls (short for list-sessions)
+    explanation: |
+      tmux ls shows all your tmux sessions.
+      You can see which ones are attached and how many windows each has.
+    commands: ["tmux ls", "tmux list-sessions"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.5-attach"
+    skill_id: tmux-attach
+    level: 4
+    title: Return to Work
+    briefing: Reattach to your detached tmux session.
+    hint: tmux attach (or tmux a for short)
+    explanation: |
+      tmux attach reconnects you to a session.
+      Add -t sessionname to attach to a specific one.
+    commands: ["tmux attach", "tmux a", "tmux attach-session"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.6-split-horizontal"
+    skill_id: tmux-split-h
+    level: 4
+    title: Split the Screen
+    briefing: Split your tmux pane horizontally (left and right).
+    hint: tmux split-window (or Ctrl-b %)
+    explanation: |
+      tmux split-window creates a new pane.
+      By default it splits horizontally. Now you can see two terminals at once!
+    commands: ["tmux split-window", "tmux split"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.7-split-vertical"
+    skill_id: tmux-split-v
+    level: 4
+    title: Stack the Panes
+    briefing: Split your tmux pane vertically (top and bottom).
+    hint: Add -v flag for vertical split (or Ctrl-b ")
+    explanation: |
+      tmux split-window -v splits vertically.
+      -v means vertical division (panes stacked top/bottom).
+    commands: ["tmux split-window -v", "tmux split -v"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.8-select-pane"
+    skill_id: tmux-pane-nav
+    level: 4
+    title: Jump Between Panes
+    briefing: You have multiple panes. Move to the pane on your right.
+    hint: tmux select-pane -R (or Ctrl-b arrow key)
+    explanation: |
+      tmux select-pane -L/R/U/D moves between panes.
+      L=left, R=right, U=up, D=down.
+    commands: ["tmux select-pane -R"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.9-new-window"
+    skill_id: tmux-window-new
+    level: 4
+    title: Open a New Window
+    briefing: Create a new tmux window. Windows are like tabs in a browser.
+    hint: tmux new-window (or Ctrl-b c)
+    explanation: |
+      Windows are full-screen views. Use them to organize different tasks.
+      Panes split one window; windows give you fresh space.
+    commands: ["tmux new-window"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.10-select-window"
+    skill_id: tmux-window-nav
+    level: 4
+    title: Switch Windows
+    briefing: Switch to the next tmux window.
+    hint: tmux select-window -n (or Ctrl-b n)
+    explanation: |
+      select-window -n goes to next window, -p to previous.
+      Or use Ctrl-b followed by the window number.
+    commands: ["tmux select-window -n"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "4.11-kill-session"
+    skill_id: tmux-kill
+    level: 4
+    title: Clean Up
+    briefing: You're done with this tmux session. Kill it entirely.
+    hint: tmux kill-session
+    explanation: |
+      tmux kill-session destroys the session and all its windows/panes.
+      Use -t name to kill a specific session.
+    commands: ["tmux kill-session"]
+    setup: []
+    goal:
+      always: true
+
+  # Level 5: Muscle memory
+  - id: "5.1-project-setup"
+    skill_id: workflow
+    level: 5
+    title: Set Up a Project
+    briefing: |
+      Create a project structure: mkdir myapp, then inside it create
+      src/, tests/, and docs/ folders, plus a README.md file.
+    hint: Use mkdir for folders, touch for files. You can chain commands.
+    explanation: |
+      Good project structure is a habit. src/ for code, tests/ for tests,
+      docs/ for documentation. README.md explains your project.
+    commands: ["mkdir myapp", "mkdir myapp/src myapp/tests myapp/docs", "touch myapp/README.md"]
+    setup:
+      - cd: /home/learner
+    goal:
+      and:
+        - path_exists: /home/learner/myapp/src
+        - path_exists: /home/learner/myapp/tests
+        - path_exists: /home/learner/myapp/docs
+        - path_exists: /home/learner/myapp/README.md
+
+  - id: "5.2-find-and-edit"
+    skill_id: workflow
+    level: 5
+    title: Hunt and Fix
+    briefing: |
+      Find all .py files under /home/learner/project,
+      then create a backup of main.py as main.py.bak
+    hint: find for searching, cp for backup
+    explanation: |
+      Real workflow: find files, understand structure, make backups before editing.
+      Professionals always backup first!
+    commands: ["find . -name \"*.py\"", "cp src/main.py src/main.py.bak"]
+    setup:
+      - mkdir: /home/learner/project/src
+      - mkdir: /home/learner/project/tests
+      - write_file:
+          path: /home/learner/project/src/main.py
+          content: "print('hello')"
+      - write_file:
+          path: /home/learner/project/src/utils.py
+          content: "def helper(): pass"
+      - write_file:
+          path: /home/learner/project/tests/test_main.py
+          content: "def test(): pass"
+      - cd: /home/learner/project
+    goal:
+      path_exists: /home/learner/project/src/main.py.bak
+
+  - id: "5.3-tmux-dev-setup"
+    skill_id: tmux-workflow
+    level: 5
+    title: Dev Environment
+    briefing: Create a tmux session named 'dev', then split it into two panes.
+    hint: tmux new -s dev, then tmux split-window
+    explanation: |
+      Pro setup: one pane for editing, one for running commands.
+      Name your sessions so you can find them later!
+    commands: ["tmux new -s dev", "tmux split-window"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "5.4-log-investigation"
+    skill_id: workflow
+    level: 5
+    title: Debug Detective
+    briefing: |
+      Find all ERROR lines in /var/log/app.log,
+      and also check what WARNING messages exist.
+    hint: Use grep twice with different patterns
+    explanation: |
+      Real debugging: check errors first, then warnings.
+      grep is your best friend for log analysis!
+    commands: ["grep ERROR app.log", "grep WARNING app.log"]
+    setup:
+      - mkdir: /var/log
+      - write_file:
+          path: /var/log/app.log
+          content: |
+            2024-01-01 10:00:00 INFO: Server started
+            2024-01-01 10:00:01 INFO: Loading configuration
+            2024-01-01 10:00:02 WARNING: Config file not found, using defaults
+            2024-01-01 10:00:03 INFO: Database connecting
+            2024-01-01 10:00:05 ERROR: Database connection timeout
+            2024-01-01 10:00:06 INFO: Retrying connection
+            2024-01-01 10:00:08 WARNING: Slow connection detected
+            2024-01-01 10:00:10 INFO: Connected successfully
+            2024-01-01 10:05:00 ERROR: Request failed: 500
+            2024-01-01 10:05:01 INFO: Error logged to monitoring
+      - cd: /var/log
+    goal:
+      always: true
+
+  - id: "5.5-cleanup"
+    skill_id: workflow
+    level: 5
+    title: Spring Cleaning
+    briefing: |
+      In /home/learner/downloads, delete all .tmp files but keep everything else.
+    hint: Use find to locate .tmp files, then rm each one
+    explanation: |
+      Targeted cleanup: find what to delete, verify, then remove.
+      Never use rm * blindly!
+    commands: ["find . -name \"*.tmp\"", "rm cache.tmp session.tmp backup.tmp"]
+    setup:
+      - mkdir: /home/learner/downloads
+      - touch: /home/learner/downloads/report.pdf
+      - touch: /home/learner/downloads/cache.tmp
+      - touch: /home/learner/downloads/session.tmp
+      - touch: /home/learner/downloads/photo.jpg
+      - touch: /home/learner/downloads/backup.tmp
+      - cd: /home/learner/downloads
+    goal:
+      and:
+        - not:
+            path_exists: /home/learner/downloads/cache.tmp
+        - not:
+            path_exists: /home/learner/downloads/session.tmp
+        - not:
+            path_exists: /home/learner/downloads/backup.tmp
+        - path_exists: /home/learner/downloads/report.pdf
+        - path_exists: /home/learner/downloads/photo.jpg
+
+  - id: "5.6-multi-window"
+    skill_id: tmux-workflow
+    level: 5
+    title: Window Manager
+    briefing: Create a tmux session with two additional windows.
+    hint: tmux new-session, then tmux new-window twice
+    explanation: |
+      Multiple windows let you organize by task.
+      Window 1 for coding, window 2 for tests, window 3 for servers...
+    commands: ["tmux new -s project", "tmux new-window", "tmux new-window"]
+    setup: []
+    goal:
+      always: true
+
+  - id: "5.7-organize-mess"
+    skill_id: workflow
+    level: 5
+    title: Untangle the Mess
+    briefing: |
+      Move all .log files to logs/, all .py files to src/,
+      and all .md files to docs/. Create folders if needed.
+    hint: mkdir first, then mv files to appropriate folders
+    explanation: |
+      Organization is a skill. Group related files, use clear folder names.
+      Your future self will thank you!
+    commands: ["mkdir logs src docs", "mv app.log error.log logs/", "mv main.py utils.py src/", "mv README.md CHANGELOG.md docs/"]
+    setup:
+      - mkdir: /home/learner/chaos
+      - touch: /home/learner/chaos/app.log
+      - touch: /home/learner/chaos/error.log
+      - touch: /home/learner/chaos/main.py
+      - touch: /home/learner/chaos/utils.py
+      - touch: /home/learner/chaos/README.md
+      - touch: /home/learner/chaos/CHANGELOG.md
+      - cd: /home/learner/chaos
+    goal:
+      and:
+        - path_exists: /home/learner/chaos/logs/app.log
+        - path_exists: /home/learner/chaos/logs/error.log
+        - path_exists: /home/learner/chaos/src/main.py
+        - path_exists: /home/learner/chaos/src/utils.py
+        - path_exists: /home/learner/chaos/docs/README.md
+        - path_exists: /home/learner/chaos/docs/CHANGELOG.md
+
+  - id: "5.8-env-check"
+    skill_id: workflow
+    level: 5
+    title: Environment Recon
+    briefing: |
+      Figure out: Where are you? What's here? Are there any hidden files?
+      Do this in three commands.
+    hint: pwd, ls, ls -a
+    explanation: |
+      First thing in any directory: pwd, ls, ls -a.
+      Know where you are and what's there. Hidden files often contain secrets!
+    commands: [pwd, ls, "ls -a"]
+    setup:
+      - mkdir: /home/learner/secret-project
+      - touch: /home/learner/secret-project/visible.txt
+      - touch: /home/learner/secret-project/.hidden-config
+      - touch: /home/learner/secret-project/.env
+      - cd: /home/learner/secret-project
+    goal:
+      always: true

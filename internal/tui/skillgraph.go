@@ -1,14 +1,30 @@
 // ABOUTME: Default skill graph configuration for Turtle
-// ABOUTME: Defines the learning curriculum - skills, prerequisites, and progression
+// ABOUTME: Loads skills from embedded YAML content
 
 package tui
 
-import "github.com/2389-research/turtle/internal/skills"
+import (
+	"log"
 
-// buildDefaultSkillGraph creates the full learning curriculum.
-//
-//nolint:funlen // Data definition function
+	"github.com/2389-research/turtle/internal/content"
+	"github.com/2389-research/turtle/internal/skills"
+)
+
+// buildDefaultSkillGraph creates the full learning curriculum from YAML.
 func buildDefaultSkillGraph() *skills.SkillGraph {
+	graph, err := content.GetSkillGraph()
+	if err != nil {
+		log.Printf("Error loading skills from YAML: %v, falling back to empty graph", err)
+		return skills.NewSkillGraph()
+	}
+	return graph
+}
+
+// buildDefaultSkillGraphLegacy creates the full learning curriculum (legacy hardcoded version).
+// Kept for reference during migration.
+//
+//nolint:funlen,unused // Legacy data definition function
+func buildDefaultSkillGraphLegacy() *skills.SkillGraph {
 	graph := skills.NewSkillGraph()
 
 	// ===================

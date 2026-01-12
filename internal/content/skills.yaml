@@ -1,0 +1,255 @@
+version: 1
+
+skills:
+  # Navigation (Level 0-1)
+  - id: pwd
+    name: pwd
+    description: Print working directory - know where you are
+    category: navigation
+
+  - id: ls
+    name: ls
+    description: List directory contents - see what's here
+    category: navigation
+    prerequisites: [pwd]
+
+  - id: cd
+    name: cd
+    description: Change directory - move around
+    category: navigation
+    prerequisites: [ls]
+
+  - id: cd-relative
+    name: cd (relative)
+    description: Navigate using . and ..
+    category: navigation
+    prerequisites: [cd]
+
+  - id: tab-completion
+    name: Tab completion
+    description: Let the shell complete paths for you
+    category: navigation
+    prerequisites: [cd]
+
+  - id: history
+    name: history
+    description: View and reuse past commands
+    category: navigation
+    prerequisites: [cd]
+
+  - id: man
+    name: man
+    description: Read manual pages
+    category: navigation
+    prerequisites: [ls]
+
+  - id: which
+    name: which
+    description: Find where a command lives
+    category: navigation
+    prerequisites: [ls]
+
+  - id: clear
+    name: clear
+    description: Clear the terminal screen
+    category: navigation
+    prerequisites: [pwd]
+
+  # File Operations (Level 2)
+  - id: mkdir
+    name: mkdir
+    description: Make directories
+    category: file-operations
+    prerequisites: [cd]
+
+  - id: touch
+    name: touch
+    description: Create empty files
+    category: file-operations
+    prerequisites: [ls]
+
+  - id: rm
+    name: rm
+    description: Remove files (careful!)
+    category: file-operations
+    prerequisites: [touch]
+
+  - id: cp
+    name: cp
+    description: Copy files
+    category: file-operations
+    prerequisites: [touch]
+
+  - id: mv
+    name: mv
+    description: Move or rename files
+    category: file-operations
+    prerequisites: [cp]
+
+  - id: cat
+    name: cat
+    description: Display file contents
+    category: file-operations
+    prerequisites: [touch]
+
+  - id: echo
+    name: echo
+    description: Print text to terminal
+    category: file-operations
+    prerequisites: [pwd]
+
+  - id: head
+    name: head
+    description: View first lines of a file
+    category: file-operations
+    prerequisites: [cat]
+
+  - id: tail
+    name: tail
+    description: View last lines of a file
+    category: file-operations
+    prerequisites: [head]
+
+  - id: less
+    name: less
+    description: Page through files
+    category: file-operations
+    prerequisites: [cat]
+
+  - id: grep
+    name: grep
+    description: Search for patterns in files
+    category: file-operations
+    prerequisites: [cat]
+
+  - id: find
+    name: find
+    description: Find files by name or attributes
+    category: file-operations
+    prerequisites: [ls]
+
+  - id: pipes
+    name: Pipes |
+    description: Connect commands together
+    category: file-operations
+    prerequisites: [grep]
+
+  - id: redirect
+    name: Redirect > >>
+    description: Send output to files
+    category: file-operations
+    prerequisites: [echo]
+
+  # Tmux Basics (Level 3)
+  - id: tmux-why
+    name: Why tmux?
+    description: Understanding terminal multiplexing
+    category: tmux-basics
+    requires_category: navigation
+    category_threshold: 0.6
+
+  - id: tmux-new
+    name: tmux new
+    description: Create a new session
+    category: tmux-basics
+    prerequisites: [tmux-why]
+
+  - id: tmux-prefix
+    name: Prefix key
+    description: The Ctrl-b gateway
+    category: tmux-basics
+    prerequisites: [tmux-new]
+
+  - id: tmux-detach
+    name: Detach
+    description: Leave session running in background
+    category: tmux-basics
+    prerequisites: [tmux-prefix]
+
+  - id: tmux-attach
+    name: Attach
+    description: Reconnect to a session
+    category: tmux-basics
+    prerequisites: [tmux-detach]
+
+  - id: tmux-list
+    name: List sessions
+    description: See all running sessions
+    category: tmux-basics
+    prerequisites: [tmux-attach]
+
+  - id: tmux-kill
+    name: Kill session
+    description: Destroy a tmux session entirely
+    category: tmux-basics
+    prerequisites: [tmux-list]
+
+  # Tmux Panes (Level 4)
+  - id: tmux-split-h
+    name: Split horizontal
+    description: Divide pane side by side
+    category: tmux-panes
+    prerequisites: [tmux-prefix]
+
+  - id: tmux-split-v
+    name: Split vertical
+    description: Divide pane top/bottom
+    category: tmux-panes
+    prerequisites: [tmux-split-h]
+
+  - id: tmux-pane-nav
+    name: Pane navigation
+    description: Move between panes
+    category: tmux-panes
+    prerequisites: [tmux-split-v]
+
+  - id: tmux-pane-resize
+    name: Resize panes
+    description: Adjust pane sizes
+    category: tmux-panes
+    prerequisites: [tmux-pane-nav]
+
+  - id: tmux-pane-close
+    name: Close pane
+    description: Close current pane
+    category: tmux-panes
+    prerequisites: [tmux-pane-nav]
+
+  # Tmux Windows (Level 5)
+  - id: tmux-window-new
+    name: New window
+    description: Create a new window
+    category: tmux-windows
+    prerequisites: [tmux-pane-nav]
+
+  - id: tmux-window-nav
+    name: Window navigation
+    description: Switch between windows
+    category: tmux-windows
+    prerequisites: [tmux-window-new]
+
+  - id: tmux-window-rename
+    name: Rename window
+    description: Give windows meaningful names
+    category: tmux-windows
+    prerequisites: [tmux-window-nav]
+
+  - id: tmux-window-close
+    name: Close window
+    description: Close current window
+    category: tmux-windows
+    prerequisites: [tmux-window-nav]
+
+  # Advanced (Level 5)
+  - id: workflow
+    name: Terminal workflows
+    description: Combine commands efficiently
+    category: advanced
+    requires_category: file-operations
+    category_threshold: 0.5
+
+  - id: tmux-workflow
+    name: Tmux workflows
+    description: Use tmux for productive development
+    category: advanced
+    prerequisites: [workflow, tmux-window-nav]

@@ -14,11 +14,19 @@ Turtle is a TUI app that teaches complete beginners how to use the terminal and 
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install 2389-research/tap/turtle
+```
+
+### Go Install
+
 ```bash
 go install github.com/2389-research/turtle/cmd/turtle@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```bash
 git clone https://github.com/2389-research/turtle

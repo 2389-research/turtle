@@ -3,10 +3,85 @@
 
 package sandbox
 
-import "strings"
+import (
+	"log"
+	"strings"
+
+	"github.com/2389-research/turtle/internal/content"
+)
 
 // GetAllMissions returns missions organized by level.
 func GetAllMissions() map[int][]*Mission {
+	rawMissions, err := content.GetRawMissions()
+	if err != nil {
+		log.Printf("Error loading missions from YAML: %v, falling back to legacy missions", err)
+		return GetAllMissionsLegacy()
+	}
+	return convertMissions(rawMissions)
+}
+
+// convertMissions converts raw YAML missions to Mission types.
+func convertMissions(raw []content.YAMLMission) map[int][]*Mission {
+	result := make(map[int][]*Mission)
+
+	for i := range raw {
+		ym := &raw[i]
+		mission, err := convertMission(ym)
+		if err != nil {
+			log.Printf("Error converting mission %s: %v, skipping", ym.ID, err)
+			continue
+		}
+		result[ym.Level] = append(result[ym.Level], mission)
+	}
+
+	return result
+}
+
+func convertMission(ym *content.YAMLMission) (*Mission, error) {
+	goalNode, err := content.ParseGoal(ym.Goal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Capture setup actions for closure
+	setupActions := ym.Setup
+
+	return &Mission{
+		ID:          ym.ID,
+		SkillID:     ym.SkillID,
+		Level:       ym.Level,
+		Title:       ym.Title,
+		Briefing:    ym.Briefing,
+		Hint:        ym.Hint,
+		Explanation: ym.Explanation,
+		Commands:    ym.Commands,
+		Setup: func(fs *Filesystem) {
+			executeSetup(fs, setupActions)
+		},
+		Goal: func(fs *Filesystem) bool {
+			return goalNode.Evaluate(fs)
+		},
+	}, nil
+}
+
+func executeSetup(fs *Filesystem, actions []content.SetupAction) {
+	for _, action := range actions {
+		switch {
+		case action.Mkdir != "":
+			_ = fs.Mkdir(action.Mkdir)
+		case action.Cd != "":
+			_ = fs.Cd(action.Cd)
+		case action.Touch != "":
+			_ = fs.Touch(action.Touch)
+		case action.WriteFile != nil:
+			_ = fs.WriteFile(action.WriteFile.Path, action.WriteFile.Content)
+		}
+	}
+}
+
+// GetAllMissionsLegacy returns missions organized by level (legacy hardcoded version).
+// Kept for reference during migration.
+func GetAllMissionsLegacy() map[int][]*Mission {
 	return map[int][]*Mission{
 		0: Level0Missions(), // Orientation
 		1: Level1Missions(), // Reading the filesystem

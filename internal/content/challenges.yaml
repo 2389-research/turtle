@@ -1,0 +1,411 @@
+version: 1
+
+challenges:
+  pwd:
+    - type: command
+      prompt: Print the current working directory
+      expected: pwd
+      hint: Three letters - print working directory
+      explanation: pwd shows where you are in the filesystem
+
+    - type: translate
+      prompt: '"Where am I?" translates to:'
+      expected: pwd
+      hint: The command shows your current location
+      explanation: pwd = print working directory
+
+    - type: multiple_choice
+      prompt: What does 'pwd' stand for?
+      options:
+        - Print Working Directory
+        - Path to Working Directory
+        - Present Working Dir
+        - Print Where Directory
+      correct: 0
+      hint: It prints where you currently are
+      explanation: pwd = Print Working Directory
+
+    - type: predict_output
+      prompt: "If you're in /home/user/projects, what does pwd output?"
+      command: pwd
+      options:
+        - /home/user/projects
+        - projects
+        - /home/user
+        - user/projects
+      correct: 0
+      hint: pwd shows the FULL path
+      explanation: pwd always shows the complete absolute path
+
+    - type: multiple_choice
+      prompt: pwd shows which type of path?
+      options:
+        - Absolute path
+        - Relative path
+        - Home path
+        - Short path
+      correct: 0
+      hint: It starts from the root /
+      explanation: pwd always shows the absolute (full) path from root
+
+  ls:
+    - type: command
+      prompt: List files in the current directory
+      expected: ls
+      hint: Two letters, short for 'list'
+      explanation: ls lists the contents of a directory
+
+    - type: command
+      prompt: List ALL files including hidden ones
+      expected: ls -a
+      hint: Hidden files start with a dot. There's a flag for 'all'
+      explanation: ls -a shows all files, including hidden ones (starting with .)
+
+    - type: command
+      prompt: List files with detailed information (permissions, size, date)
+      expected: ls -l
+      hint: The flag for 'long' listing
+      explanation: ls -l shows the long format with details
+
+    - type: multiple_choice
+      prompt: Which flag shows hidden files with ls?
+      options:
+        - -a
+        - -h
+        - -l
+        - -d
+      correct: 0
+      hint: Think 'all' files
+      explanation: ls -a shows all files including hidden ones starting with .
+
+    - type: translate
+      prompt: '"Show me everything in this folder" translates to:'
+      expected: ls
+      hint: Short for 'list'
+      explanation: ls lists directory contents
+
+  cd:
+    - type: command
+      prompt: Go to your home directory
+      expected: cd
+      hint: cd by itself takes you home
+      explanation: cd without arguments navigates to your home directory
+
+    - type: command
+      prompt: Go up one directory level
+      expected: cd ..
+      hint: Two dots mean parent directory
+      explanation: cd .. moves up one level in the directory tree
+
+    - type: command
+      prompt: Go to the root directory
+      expected: cd /
+      hint: The very top of the filesystem
+      explanation: cd / takes you to the root of the filesystem
+
+    - type: multiple_choice
+      prompt: What does .. refer to?
+      options:
+        - Parent directory
+        - Current directory
+        - Home directory
+        - Root directory
+      correct: 0
+      hint: Think about going 'up' a level
+      explanation: .. always refers to the parent directory
+
+    - type: translate
+      prompt: '"Go back to the previous folder" translates to:'
+      expected: cd ..
+      hint: Two dots
+      explanation: cd .. moves up one directory level
+
+  mkdir:
+    - type: command
+      prompt: Create a directory called 'projects'
+      expected: mkdir projects
+      hint: mkdir = make directory
+      explanation: mkdir creates a new directory
+
+    - type: command
+      prompt: Create a directory called 'test'
+      expected: mkdir test
+      hint: mkdir followed by the name
+      explanation: mkdir creates directories
+
+  touch:
+    - type: command
+      prompt: Create an empty file called 'notes.txt'
+      expected: touch notes.txt
+      hint: touch creates empty files
+      explanation: touch creates an empty file or updates timestamp of existing file
+
+    - type: command
+      prompt: Create a file called 'readme.md'
+      expected: touch readme.md
+      hint: touch followed by filename
+      explanation: touch is commonly used to create new empty files
+
+  rm:
+    - type: command
+      prompt: Delete a file called 'temp.txt'
+      expected: rm temp.txt
+      hint: rm = remove
+      explanation: rm deletes files permanently - there's no trash can!
+
+  cp:
+    - type: command
+      prompt: Copy 'file.txt' to 'backup.txt'
+      expected: cp file.txt backup.txt
+      hint: cp source destination
+      explanation: cp copies files - the original remains
+
+  mv:
+    - type: command
+      prompt: Rename 'old.txt' to 'new.txt'
+      expected: mv old.txt new.txt
+      hint: mv is also how you rename
+      explanation: mv moves/renames - the original is gone
+
+    - type: command
+      prompt: Move 'doc.txt' to the 'archive' folder
+      expected: mv doc.txt archive/
+      hint: mv source destination
+      explanation: mv moves files to new locations
+
+  cat:
+    - type: command
+      prompt: Display the contents of 'readme.txt'
+      expected: cat readme.txt
+      hint: cat shows file contents
+      explanation: cat outputs the entire file content
+
+  echo:
+    - type: command
+      prompt: Print 'Hello World' to the terminal
+      expected: echo Hello World
+      hint: echo prints text
+      explanation: echo outputs text to the terminal
+
+  grep:
+    - type: command
+      prompt: Search for 'error' in log.txt
+      expected: grep error log.txt
+      hint: grep pattern filename
+      explanation: grep finds lines matching a pattern
+
+  find:
+    - type: command
+      prompt: Find all files named '*.txt' starting from current directory
+      expected: find . -name "*.txt"
+      hint: find path -name pattern
+      explanation: find searches for files by name or attributes
+
+  redirect:
+    - type: command
+      prompt: Write 'test' to a file called output.txt
+      expected: echo test > output.txt
+      hint: Use > to redirect output
+      explanation: "> redirects output to a file (overwrites)"
+
+  tmux-new:
+    - type: command
+      prompt: Start a new tmux session
+      expected: tmux
+      hint: Just type tmux
+      explanation: tmux starts a new session
+
+    - type: command
+      prompt: Start a tmux session named 'work'
+      expected: tmux new -s work
+      hint: new -s for named session
+      explanation: tmux new -s name creates a named session
+
+  tmux-detach:
+    - type: command
+      prompt: Detach from the current tmux session
+      expected: tmux detach
+      hint: Leave it running in background
+      explanation: tmux detach leaves session running
+
+  tmux-attach:
+    - type: command
+      prompt: Attach to an existing tmux session
+      expected: tmux attach
+      hint: Reconnect to background session
+      explanation: tmux attach reconnects to a session
+
+  tmux-list:
+    - type: command
+      prompt: List all tmux sessions
+      expected: tmux ls
+      hint: ls for list
+      explanation: tmux ls shows running sessions
+
+  tmux-split-h:
+    - type: command
+      prompt: Split the tmux pane horizontally (left/right)
+      expected: tmux split-window
+      hint: split-window command
+      explanation: Creates a new pane next to current
+
+  tmux-split-v:
+    - type: command
+      prompt: Split the tmux pane vertically (top/bottom)
+      expected: tmux split-window -v
+      hint: Add -v flag
+      explanation: -v splits into top and bottom
+
+  tmux-pane-nav:
+    - type: command
+      prompt: Move to the pane on the right
+      expected: tmux select-pane -R
+      hint: select-pane with direction
+      explanation: -R for right, -L left, -U up, -D down
+
+  tmux-window-new:
+    - type: command
+      prompt: Create a new tmux window
+      expected: tmux new-window
+      hint: new-window command
+      explanation: Creates a fresh window
+
+  tmux-window-nav:
+    - type: command
+      prompt: Switch to the next tmux window
+      expected: tmux select-window -n
+      hint: select-window -n
+      explanation: -n for next, -p for previous
+
+  tmux-kill:
+    - type: command
+      prompt: Kill the current tmux session
+      expected: tmux kill-session
+      hint: kill-session command
+      explanation: Destroys the session entirely
+
+  workflow:
+    - type: command
+      prompt: Create a 'src' directory
+      expected: mkdir src
+      hint: mkdir for directories
+      explanation: Part of project setup workflow
+
+  tmux-workflow:
+    - type: command
+      prompt: Start a tmux session named 'dev'
+      expected: tmux new -s dev
+      hint: Named session for development
+      explanation: Good practice to name your sessions
+
+  cd-relative:
+    - type: command
+      prompt: Navigate to parent directory
+      expected: cd ..
+      hint: Two dots
+      explanation: .. means parent directory
+
+  tab-completion:
+    - type: command
+      prompt: Type 'ls' and press Tab (just type ls)
+      expected: ls
+      hint: Tab completes commands and paths
+      explanation: Tab completion saves typing
+
+  history:
+    - type: command
+      prompt: Show your command history
+      expected: history
+      hint: history command
+      explanation: Shows past commands
+
+  man:
+    - type: command
+      prompt: Read the manual for ls
+      expected: man ls
+      hint: man command
+      explanation: man shows documentation
+
+  which:
+    - type: command
+      prompt: Find where the 'python' command is located
+      expected: which python
+      hint: which command
+      explanation: Shows executable location
+
+  clear:
+    - type: command
+      prompt: Clear the terminal screen
+      expected: clear
+      hint: clear command
+      explanation: Clears visible output
+
+  head:
+    - type: command
+      prompt: Show first 10 lines of file.txt
+      expected: head file.txt
+      hint: head command
+      explanation: head shows beginning of file
+
+  tail:
+    - type: command
+      prompt: Show last 10 lines of file.txt
+      expected: tail file.txt
+      hint: tail command
+      explanation: tail shows end of file
+
+  less:
+    - type: command
+      prompt: Page through a large file called log.txt
+      expected: less log.txt
+      hint: less command
+      explanation: less for interactive viewing
+
+  pipes:
+    - type: command
+      prompt: List files and filter for .txt extension
+      expected: ls | grep .txt
+      hint: Use pipe |
+      explanation: Pipes connect commands
+
+  tmux-why:
+    - type: command
+      prompt: Start tmux to see what it does
+      expected: tmux
+      hint: Just try it
+      explanation: tmux lets you split and persist terminals
+
+  tmux-prefix:
+    - type: command
+      prompt: Start a tmux session (prefix is Ctrl-b)
+      expected: tmux
+      hint: Start with tmux
+      explanation: Once inside, Ctrl-b is the prefix for all commands
+
+  tmux-pane-resize:
+    - type: command
+      prompt: Split the pane to practice resizing
+      expected: tmux split-window
+      hint: Create panes first
+      explanation: Use Ctrl-b arrows to resize
+
+  tmux-pane-close:
+    - type: command
+      prompt: Close the current pane (type exit)
+      expected: exit
+      hint: exit or Ctrl-d
+      explanation: exit closes the pane
+
+  tmux-window-rename:
+    - type: command
+      prompt: Create a new window to practice renaming
+      expected: tmux new-window
+      hint: new-window first
+      explanation: Ctrl-b , to rename
+
+  tmux-window-close:
+    - type: command
+      prompt: Close the current window (type exit)
+      expected: exit
+      hint: exit command
+      explanation: Closes window when last pane exits
