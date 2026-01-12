@@ -420,24 +420,24 @@ func (m *LessonModel) View() string {
 		if m.SpeedTimeLeft <= 10 {
 			timerStyle = DangerStyle
 		}
-		timer := timerStyle.Render(fmt.Sprintf("⏱️  %ds", m.SpeedTimeLeft))
+		timer := timerStyle.Render(fmt.Sprintf("%s %ds", Lightning, m.SpeedTimeLeft))
 		combo := ""
 		if m.Combo > 1 {
-			combo = AccentStyle.Render(fmt.Sprintf("🔥 %dx", m.Combo))
+			combo = ComboStyle.Render(fmt.Sprintf("%s %dx", Fire, m.Combo))
 		}
 		header = lipgloss.JoinHorizontal(
 			lipgloss.Center,
-			TitleStyle.Render("⚡ SPEED ROUND"),
-			"  ",
+			TitleStyle.Render(Lightning+" SPEED ROUND"),
+			"  "+Bullet+"  ",
 			timer,
 			"  ",
 			combo,
 		)
 	} else {
-		hearts := strings.Repeat("❤️ ", m.Hearts) + strings.Repeat("🖤 ", 3-m.Hearts)
+		hearts := Hearts(m.Hearts, 3)
 		combo := ""
 		if m.Combo > 1 {
-			combo = AccentStyle.Render(fmt.Sprintf("🔥 %dx combo!", m.Combo))
+			combo = ComboStyle.Render(fmt.Sprintf("%s %dx combo!", Fire, m.Combo))
 		}
 		header = lipgloss.JoinHorizontal(
 			lipgloss.Center,

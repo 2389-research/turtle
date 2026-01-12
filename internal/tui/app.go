@@ -21,7 +21,6 @@ const (
 	ViewLesson
 	ViewSkillTree
 	ViewStats
-	ViewSettings
 	ViewSkillSelect
 )
 
@@ -159,7 +158,7 @@ func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case 0: // Quick Practice - all unlocked skills
 			m.CurrentView = ViewLesson
 			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph, nil)
-			return m, nil
+			return m, m.LessonModel.Init()
 		case 1: // Select Skills
 			m.CurrentView = ViewSkillSelect
 			m.SkillSelectorModel = NewSkillSelectorModel(m.Progress, m.SkillGraph)
@@ -221,6 +220,7 @@ func (m Model) handleSkillSelectKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.CurrentView = ViewLesson
 			m.LessonModel = NewLessonModel(m.Progress, m.SkillGraph, selectedSkills)
 			m.SkillSelectorModel = nil
+			return m, m.LessonModel.Init()
 		}
 	}
 
@@ -257,69 +257,75 @@ func (m Model) View() string {
 
 // renderHome renders the main menu.
 func (m Model) renderHome() string {
-	// Header with stats
-	header := m.renderHeader()
+	// Hero banner with ASCII art.
+	banner := HeroBanner()
+	tagline := Tagline()
 
-	// Menu
-	menuItems := []string{"Quick Practice", "Select Skills...", "Speed Round ⚡", "Skill Tree", "Stats", "Quit"}
-	menu := "\n"
-	for i, item := range menuItems {
-		cursor := "  "
-		style := MenuItemStyle
-		if i == m.MenuIndex {
-			cursor = "> "
-			style = MenuItemSelectedStyle
-		}
-		menu += style.Render(cursor+item) + "\n"
+	// Player stats card.
+	xpInLevel := m.Progress.XP % skills.XPPerLevel
+	xpProgress := float64(xpInLevel) / float64(skills.XPPerLevel)
+	playerCard := PlayerCard(m.Progress.Level, m.Progress.XP, m.Progress.CurrentStreak, xpProgress)
+
+	// Menu with styled items.
+	menuItems := []struct {
+		label string
+		desc  string
+		icon  string
+	}{
+		{"Quick Practice", "Practice all your unlocked skills", Lightning},
+		{"Select Skills", "Choose specific skills to drill", Star},
+		{"Speed Round", "Fast-paced challenge mode", Fire},
+		{"Skill Tree", "View your progress", Bullet},
+		{"Stats", "See your statistics", Bullet},
+		{"Quit", "Exit Turtle", ArrowLeft},
 	}
 
-	// Today's goals
+	menu := ""
+	for i, item := range menuItems {
+		if i == m.MenuIndex {
+			// Selected item with arrow and glow.
+			line := MenuItemSelectedStyle.Render(item.icon+" "+item.label) +
+				"  " + MutedStyle.Render(item.desc)
+			menu += line + "\n"
+		} else {
+			// Unselected with subtle styling.
+			menu += MenuItemStyle.Render("  "+item.label) + "\n"
+		}
+	}
+
+	// What is Turtle explanation.
+	whatIs := WhatIsTurtle()
+
+	// Layout: Two columns - menu on left, explanation on right.
+	menuBox := HighlightBoxStyle.Width(36).Render(menu)
+	infoBox := BoxStyle.Width(56).Render(whatIs)
+
+	columns := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		menuBox,
+		"  ",
+		infoBox,
+	)
+
+	// Today's goals.
 	goals := m.renderTodaysGoals()
 
-	// Combine
+	// Combine everything vertically.
 	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
+		lipgloss.Center,
+		banner,
+		tagline,
 		"",
-		BoxStyle.Render(menu),
+		playerCard,
+		"",
+		columns,
 		"",
 		goals,
 	)
 
-	footer := FooterStyle.Render("↑/↓ navigate • enter select • q quit")
+	footer := FooterStyle.Render("  " + Arrow + "↑↓ navigate  " + Bullet + " enter select  " + BulletEmpty + " q quit")
 
-	return lipgloss.JoinVertical(lipgloss.Left, content, "", footer)
-}
-
-// renderHeader shows XP, level, streak.
-func (m Model) renderHeader() string {
-	turtle := TitleStyle.Render("🐢 TURTLE")
-
-	level := fmt.Sprintf("Level %d", m.Progress.Level)
-	xp := fmt.Sprintf("%d XP", m.Progress.XP)
-	streak := fmt.Sprintf("🔥 %d day streak", m.Progress.CurrentStreak)
-
-	stats := lipgloss.JoinHorizontal(
-		lipgloss.Center,
-		AccentStyle.Render(level),
-		MutedStyle.Render(" • "),
-		XPStyle.Render(xp),
-		MutedStyle.Render(" • "),
-		StreakStyle.Render(streak),
-	)
-
-	// XP progress to next level
-	xpInLevel := m.Progress.XP % skills.XPPerLevel
-	xpProgress := float64(xpInLevel) / float64(skills.XPPerLevel)
-	progressBar := ProgressBar(30, xpProgress)
-	nextLevel := fmt.Sprintf(" %d/%d to Level %d", xpInLevel, skills.XPPerLevel, m.Progress.Level+1)
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		turtle,
-		stats,
-		progressBar+MutedStyle.Render(nextLevel),
-	)
+	return lipgloss.JoinVertical(lipgloss.Center, content, "", footer)
 }
 
 // renderTodaysGoals shows what the user should practice today.
@@ -342,19 +348,22 @@ func (m Model) renderTodaysGoals() string {
 		}
 	}
 
-	// Build goals list
+	// Build goals list with styled icons
 	goals := ""
 	if reviewCount > 0 {
-		goals += fmt.Sprintf("  🔄 Review: %d skills need practice\n", reviewCount)
+		goals += AccentStyle.Render("  "+MasteryHalf) + MutedStyle.Render(" Review: ") +
+			StatValueStyle.Render(fmt.Sprintf("%d skills", reviewCount)) + MutedStyle.Render(" need practice\n")
 	}
 	if newSkill != "" {
-		goals += fmt.Sprintf("  📚 New: Learn %s\n", newSkill)
+		goals += SuccessStyle.Render("  "+Star) + MutedStyle.Render(" New: Learn ") +
+			AccentStyle.Render(newSkill) + "\n"
 	}
 	if reviewCount == 0 && newSkill == "" {
-		goals += "  ✨ All caught up! Great work!\n"
+		goals += SuccessStyle.Render("  "+MasteryFull) + MutedStyle.Render(" All caught up! ") +
+			AccentStyle.Render("Great work!") + "\n"
 	}
 
-	return HighlightBoxStyle.Render(lipgloss.JoinVertical(
+	return GlowBoxStyle.Render(lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
 		goals,
@@ -380,33 +389,37 @@ func (m Model) renderSkillTree() string {
 			continue
 		}
 
-		content += "\n" + SubtitleStyle.Render(string(cat)) + "\n"
+		content += "\n" + CategoryStyle.Render(string(cat)) + "\n"
+		content += Divider(40, "light") + "\n"
 
 		for _, skillID := range catSkills {
 			skill := m.SkillGraph.Skills[skillID]
 			strength := m.Progress.GetStrength(skillID)
 
-			// Status indicator
-			var status string
-			switch {
-			case strength == 0:
-				status = MutedStyle.Render("○")
-			case strength < skills.CrackThreshold:
-				status = DangerStyle.Render("◐") // cracking
-			case strength < skills.UnlockThreshold:
-				status = AccentStyle.Render("◑")
-			default:
-				status = SuccessStyle.Render("●")
-			}
+			// Use the new MasteryIndicator helper
+			status := MasteryIndicator(strength, true)
 
 			// Progress bar
-			bar := ProgressBar(10, strength)
+			bar := ProgressBar(12, strength)
 
-			line := fmt.Sprintf("  %s %s %s %.0f%%",
+			// Percentage with appropriate styling
+			var pct string
+			switch {
+			case strength >= 0.8:
+				pct = SkillMasteredStyle.Render(fmt.Sprintf("%3.0f%%", strength*100))
+			case strength >= 0.5:
+				pct = SkillPracticingStyle.Render(fmt.Sprintf("%3.0f%%", strength*100))
+			case strength > 0:
+				pct = SkillLearningStyle.Render(fmt.Sprintf("%3.0f%%", strength*100))
+			default:
+				pct = SkillLockedStyle.Render("  0%")
+			}
+
+			line := fmt.Sprintf("  %s %-20s %s %s",
 				status,
 				skill.Name,
 				bar,
-				strength*100,
+				pct,
 			)
 			content += line + "\n"
 		}

@@ -234,53 +234,97 @@ func (m *SkillSelectorModel) GetSelectedSkills() []string {
 func (m *SkillSelectorModel) View() string {
 	var b strings.Builder
 
-	// Title
-	title := SubtitleStyle.Render("SELECT SKILLS TO PRACTICE")
-	b.WriteString(title)
+	b.WriteString(SubtitleStyle.Render("SELECT SKILLS TO PRACTICE"))
 	b.WriteString("\n\n")
 
-	// Skill list
-	for i, item := range m.flatSkills {
-		if item.isCategory {
-			// Category header
-			name := categoryDisplayNames[item.category]
-			b.WriteString("\n")
-			b.WriteString(AccentStyle.Render(name))
-			b.WriteString("\n")
-		} else {
-			// Skill item
-			isSelected := m.selected[item.skillID]
-			isUnlocked := m.unlockedSkills[item.skillID]
-			isCursor := i == m.cursorIndex
+	// Calculate visible window and render skill list.
+	visibleLines := m.height - 12
+	if visibleLines < 5 {
+		visibleLines = 5
+	}
+	b.WriteString(m.renderSkillList(visibleLines))
 
-			line := m.renderSkillLine(item.skillID, isSelected, isUnlocked, isCursor)
-			b.WriteString(line)
-			b.WriteString("\n")
+	// Footer: count, error, help.
+	b.WriteString(m.renderFooter())
+
+	// Constrain box width.
+	boxWidth := m.width - 4
+	if boxWidth > 60 {
+		boxWidth = 60
+	}
+	return BoxStyle.Width(boxWidth).Render(b.String())
+}
+
+func (m *SkillSelectorModel) renderSkillList(visibleLines int) string {
+	var b strings.Builder
+	startIdx, endIdx := m.calculateVisibleRange(visibleLines)
+
+	for i := startIdx; i < endIdx && i < len(m.flatSkills); i++ {
+		item := m.flatSkills[i]
+		if item.isCategory {
+			b.WriteString("\n" + AccentStyle.Render(categoryDisplayNames[item.category]) + "\n")
+		} else {
+			line := m.renderSkillLine(item.skillID, m.selected[item.skillID],
+				m.unlockedSkills[item.skillID], i == m.cursorIndex)
+			b.WriteString(line + "\n")
 		}
 	}
 
-	// Selection count
+	if startIdx > 0 {
+		b.WriteString(MutedStyle.Render("  ↑ more above\n"))
+	}
+	if endIdx < len(m.flatSkills) {
+		b.WriteString(MutedStyle.Render("  ↓ more below\n"))
+	}
+	return b.String()
+}
+
+func (m *SkillSelectorModel) renderFooter() string {
+	var b strings.Builder
+
 	selectedCount := len(m.GetSelectedSkills())
 	b.WriteString("\n")
 	countStyle := MutedStyle
 	if selectedCount == 0 {
 		countStyle = DangerStyle
 	}
-	b.WriteString(countStyle.Render(fmt.Sprintf("%d skill(s) selected", selectedCount)))
-	b.WriteString("\n")
+	b.WriteString(countStyle.Render(fmt.Sprintf("%d skill(s) selected", selectedCount)) + "\n")
 
-	// Error message
 	if m.errorMsg != "" {
-		b.WriteString(DangerStyle.Render(m.errorMsg))
-		b.WriteString("\n")
+		b.WriteString(DangerStyle.Render(m.errorMsg) + "\n")
 	}
 
-	// Help
-	help := MutedStyle.Render("[Space] Toggle  [A] All  [N] None  [Enter] Start  [Esc] Cancel")
-	b.WriteString("\n")
-	b.WriteString(help)
+	help := "[Space] Toggle  [A] All  [N] None  [Enter] Start  [Esc] Cancel"
+	if m.width < 70 {
+		help = "[Space]Toggle [Enter]Start [Esc]Back"
+	}
+	b.WriteString("\n" + MutedStyle.Render(help))
+	return b.String()
+}
 
-	return BoxStyle.Render(b.String())
+// calculateVisibleRange returns start and end indices for visible items.
+func (m *SkillSelectorModel) calculateVisibleRange(visibleLines int) (int, int) {
+	if len(m.flatSkills) <= visibleLines {
+		return 0, len(m.flatSkills)
+	}
+
+	// Center the cursor in the visible window.
+	halfWindow := visibleLines / 2
+	startIdx := m.cursorIndex - halfWindow
+	if startIdx < 0 {
+		startIdx = 0
+	}
+
+	endIdx := startIdx + visibleLines
+	if endIdx > len(m.flatSkills) {
+		endIdx = len(m.flatSkills)
+		startIdx = endIdx - visibleLines
+		if startIdx < 0 {
+			startIdx = 0
+		}
+	}
+
+	return startIdx, endIdx
 }
 
 // renderSkillLine renders a single skill line.

@@ -28,10 +28,8 @@ const (
 
 // MissionTUI handles mission-based learning.
 type MissionTUI struct {
-	Screen     MissionScreen
-	Progress   *skills.UserProgress
-	SkillGraph *skills.SkillGraph
-	Missions   map[int][]*sandbox.Mission
+	Screen   MissionScreen
+	Missions map[int][]*sandbox.Mission
 
 	// Mission state
 	CurrentLevel   int
@@ -53,7 +51,7 @@ type MissionTUI struct {
 	Width  int
 	Height int
 
-	// Flashcard mode
+	// Flashcard mode (shares Progress and SkillGraph).
 	FlashcardModel Model
 }
 
@@ -64,12 +62,27 @@ type historyEntry struct {
 	Success bool
 }
 
+// mainMenuItem defines a menu entry.
+type mainMenuItem struct {
+	label string
+	desc  string
+	icon  string
+}
+
+// mainMenuItems is the single source of truth for main menu options.
+var mainMenuItems = []mainMenuItem{
+	{"Missions", "Interactive sandbox tutorials", Lightning},
+	{"Flashcards", "Quick spaced repetition drill", Star},
+	{"Speed Round", "Timed flashcard challenge", Fire},
+	{"Skill Tree", "View your skill progress", Bullet},
+	{"Stats", "Session and overall stats", Bullet},
+	{"Quit", "Exit Turtle", ArrowLeft},
+}
+
 // NewMissionTUI creates a new mission-based learning interface.
 func NewMissionTUI() *MissionTUI {
 	return &MissionTUI{
 		Screen:         ScreenMenu,
-		Progress:       skills.NewUserProgress(),
-		SkillGraph:     buildPedagogicalSkillGraph(),
 		Missions:       sandbox.GetAllMissions(),
 		MenuIndex:      0,
 		Width:          80,
@@ -113,25 +126,42 @@ func (m *MissionTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MissionTUI) updateMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	menuCount := len(mainMenuItems)
+
 	switch msg.String() {
 	case "up", "k":
 		if m.MenuIndex > 0 {
 			m.MenuIndex--
+		} else {
+			m.MenuIndex = menuCount - 1
 		}
 	case "down", "j":
-		if m.MenuIndex < 3 {
+		if m.MenuIndex < menuCount-1 {
 			m.MenuIndex++
+		} else {
+			m.MenuIndex = 0
 		}
 	case "enter", " ":
 		switch m.MenuIndex {
 		case 0: // Missions
 			m.Screen = ScreenLevelSelect
 			m.LevelIndex = 0
-		case 1: // Flashcards
+		case 1: // Flashcards - go directly to practice
 			m.Screen = ScreenFlashcards
-		case 2: // Stats
+			m.FlashcardModel.CurrentView = ViewLesson
+			m.FlashcardModel.LessonModel = NewLessonModel(m.FlashcardModel.Progress, m.FlashcardModel.SkillGraph, nil)
+			return m, m.FlashcardModel.LessonModel.Init()
+		case 2: // Speed Round - go directly to speed round
+			m.Screen = ScreenFlashcards
+			m.FlashcardModel.CurrentView = ViewLesson
+			m.FlashcardModel.LessonModel = NewSpeedRoundModel(m.FlashcardModel.Progress, m.FlashcardModel.SkillGraph, nil)
+			return m, m.FlashcardModel.LessonModel.Init()
+		case 3: // Skill Tree
+			m.Screen = ScreenFlashcards
+			m.FlashcardModel.CurrentView = ViewSkillTree
+		case 4: // Stats
 			m.Screen = ScreenStats
-		case 3: // Quit
+		case 5: // Quit
 			return m, tea.Quit
 		}
 	case "q", "ctrl+c":
@@ -206,22 +236,38 @@ func (m *MissionTUI) updateComplete(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *MissionTUI) updateStats(_ tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Any key returns to menu
+func (m *MissionTUI) updateStats(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Handle ctrl+c to quit app.
+	if msg.String() == "ctrl+c" {
+		return m, tea.Quit
+	}
+	// Any other key returns to menu.
 	m.Screen = ScreenMenu
 	return m, nil
 }
 
 func (m *MissionTUI) updateFlashcards(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	// Check for escape to return to main menu
-	if msg.String() == "esc" && m.FlashcardModel.CurrentView == ViewHome {
+	// Always intercept esc/q to return to main menu.
+	if msg.String() == "esc" || msg.String() == "q" {
 		m.Screen = ScreenMenu
+		m.FlashcardModel.CurrentView = ViewHome
+		m.FlashcardModel.LessonModel = nil
 		return m, nil
 	}
 
-	// Delegate to flashcard model
+	// Delegate to flashcard model for other keys.
 	updatedModel, cmd := m.FlashcardModel.Update(msg)
-	m.FlashcardModel = updatedModel.(Model)
+	if model, ok := updatedModel.(Model); ok {
+		m.FlashcardModel = model
+	}
+
+	// If flashcard model navigated to its home, override back to main menu.
+	if m.FlashcardModel.CurrentView == ViewHome {
+		m.Screen = ScreenMenu
+		m.FlashcardModel.LessonModel = nil
+		return m, nil
+	}
+
 	return m, cmd
 }
 
@@ -272,7 +318,7 @@ func (m *MissionTUI) executeCommand() {
 
 	if result.Completed {
 		m.MissionsCompleted++
-		m.Progress.Practice(m.Runner.Mission.SkillID, 5) // Perfect score for completion
+		m.FlashcardModel.Progress.Practice(m.Runner.Mission.SkillID, 5) // Perfect score for completion
 		m.Screen = ScreenComplete
 	}
 }
@@ -297,72 +343,137 @@ func (m *MissionTUI) View() string {
 }
 
 func (m *MissionTUI) viewMenu() string {
-	title := TitleStyle.Render("🐢 TURTLE")
-	subtitle := MutedStyle.Render("Learn the terminal, one mission at a time")
-
-	menuItems := []string{"Missions", "Flashcards", "Stats", "Quit"}
-	var menu string
-	for i, item := range menuItems {
-		cursor := "  "
-		style := MutedStyle
-		if i == m.MenuIndex {
-			cursor = "> "
-			style = AccentStyle
-		}
-		menu += style.Render(cursor+item) + "\n"
+	// For very narrow terminals, use compact layout.
+	if m.Width < 60 {
+		return m.viewMenuCompact()
 	}
 
-	footer := MutedStyle.Render("↑/↓ navigate • enter select • q quit")
+	// Hero banner with ASCII art (hide on medium terminals).
+	var banner, tagline string
+	if m.Width >= 80 {
+		banner = HeroBanner()
+		tagline = Tagline()
+	} else {
+		banner = TitleStyle.Render("🐢 TURTLE")
+		tagline = Tagline()
+	}
+
+	// Player stats card.
+	xpInLevel := m.FlashcardModel.Progress.XP % skills.XPPerLevel
+	xpProgress := float64(xpInLevel) / float64(skills.XPPerLevel)
+	playerCard := PlayerCard(m.FlashcardModel.Progress.Level, m.FlashcardModel.Progress.XP, m.FlashcardModel.Progress.CurrentStreak, xpProgress)
+
+	// Build menu and columns.
+	menu := m.buildMainMenu()
+	columns := m.buildMenuColumns(menu)
+
+	// Session stats if any progress.
+	sessionStats := m.buildSessionStats()
+
+	// Combine everything.
+	content := lipgloss.JoinVertical(lipgloss.Center, banner, tagline, "", playerCard, "", columns)
+	if sessionStats != "" {
+		content = lipgloss.JoinVertical(lipgloss.Center, content, "", sessionStats)
+	}
+
+	footer := FooterStyle.Render("  " + Arrow + "↑↓  " + Bullet + " enter  " + BulletEmpty + " q")
+	return lipgloss.JoinVertical(lipgloss.Center, content, "", footer)
+}
+
+func (m *MissionTUI) viewMenuCompact() string {
+	// Minimal layout for very narrow terminals.
+	title := TitleStyle.Render("🐢 TURTLE")
+
+	menu := m.buildMainMenu()
+	menuBox := HighlightBoxStyle.Width(m.Width - 4).Render(menu)
+
+	footer := MutedStyle.Render("↑↓ nav • enter • q quit")
 
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
 		"",
 		title,
-		subtitle,
 		"",
-		menu,
+		menuBox,
 		"",
 		footer,
 	)
 }
 
+func (m *MissionTUI) buildMainMenu() string {
+	menu := ""
+	for i, item := range mainMenuItems {
+		if i == m.MenuIndex {
+			line := MenuItemSelectedStyle.Render(item.icon+" "+item.label) +
+				"  " + MutedStyle.Render(item.desc)
+			menu += line + "\n"
+		} else {
+			menu += MenuItemStyle.Render("  "+item.label) + "\n"
+		}
+	}
+	return menu
+}
+
+func (m *MissionTUI) buildMenuColumns(menu string) string {
+	// For narrow terminals, stack vertically instead of side-by-side.
+	if m.Width < 100 {
+		menuBox := HighlightBoxStyle.Width(m.Width - 4).Render(menu)
+		return menuBox
+	}
+
+	// Wide terminals: two-column layout.
+	menuWidth := (m.Width - 10) * 2 / 5 // 40% for menu
+	infoWidth := (m.Width - 10) * 3 / 5 // 60% for info
+	whatIs := WhatIsTurtleWidth(infoWidth - 6)
+	menuBox := HighlightBoxStyle.Width(menuWidth).Render(menu)
+	infoBox := BoxStyle.Width(infoWidth).Render(whatIs)
+	return lipgloss.JoinHorizontal(lipgloss.Top, menuBox, "  ", infoBox)
+}
+
+func (m *MissionTUI) buildSessionStats() string {
+	if m.MissionsCompleted == 0 && m.CommandsUsed == 0 {
+		return ""
+	}
+	return GlowBoxStyle.Render(
+		SubtitleStyle.Render("THIS SESSION") + "\n" +
+			MutedStyle.Render(fmt.Sprintf("  %s Missions completed: ", MasteryFull)) +
+			StatValueStyle.Render(fmt.Sprintf("%d", m.MissionsCompleted)) + "\n" +
+			MutedStyle.Render(fmt.Sprintf("  %s Commands executed: ", Lightning)) +
+			StatValueStyle.Render(fmt.Sprintf("%d", m.CommandsUsed)),
+	)
+}
+
 func (m *MissionTUI) viewLevelSelect() string {
-	title := TitleStyle.Render("Select Level")
+	// Header with small logo.
+	header := lipgloss.JoinHorizontal(lipgloss.Center,
+		TitleStyle.Render("🐢"),
+		MutedStyle.Render(" TURTLE "),
+		AccentStyle.Render(Arrow+" Missions"),
+	)
+
+	title := SubtitleStyle.Render("SELECT LEVEL")
 
 	levelNames := LevelNames()
 	levelGoals := LevelGoals()
 
 	var levels string
 	for i := 0; i < len(m.Missions); i++ {
-		cursor := "  "
-		style := MutedStyle
-		if i == m.LevelIndex {
-			cursor = "> "
-			style = AccentStyle
-		}
-
 		name := levelNames[i]
 		goal := levelGoals[i]
 		missionCount := len(m.Missions[i])
 
-		levelLine := fmt.Sprintf("%sLevel %d: %s", cursor, i, name)
-		levels += style.Render(levelLine) + "\n"
 		if i == m.LevelIndex {
-			levels += MutedStyle.Render(fmt.Sprintf("    \"%s\" (%d missions)", goal, missionCount)) + "\n"
+			levels += MenuItemSelectedStyle.Render(fmt.Sprintf("%s Level %d: %s", Arrow, i, name)) + "\n"
+			levels += MutedStyle.Render(fmt.Sprintf("     \"%s\" (%d missions)", goal, missionCount)) + "\n"
+		} else {
+			levels += MenuItemStyle.Render(fmt.Sprintf("  Level %d: %s", i, name)) + "\n"
 		}
 	}
 
-	footer := MutedStyle.Render("↑/↓ navigate • enter start • esc back")
+	content := HighlightBoxStyle.Width(50).Render(levels)
+	footer := FooterStyle.Render("  " + Arrow + "↑↓ navigate  " + Bullet + " enter start  " + BulletEmpty + " esc back")
 
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		"",
-		title,
-		"",
-		levels,
-		"",
-		footer,
-	)
+	return lipgloss.JoinVertical(lipgloss.Left, "", header, "", title, "", content, "", footer)
 }
 
 func (m *MissionTUI) viewMission() string {
@@ -371,17 +482,22 @@ func (m *MissionTUI) viewMission() string {
 	}
 
 	mission := m.Runner.Mission
-
-	// Header
 	levelName := LevelNames()[m.CurrentLevel]
-	header := MutedStyle.Render(fmt.Sprintf("Level %d: %s • Mission %d/%d",
-		m.CurrentLevel, levelName, m.CurrentMission+1, len(m.Missions[m.CurrentLevel])))
 
-	// Mission title and briefing
+	// Header breadcrumb.
+	header := lipgloss.JoinHorizontal(lipgloss.Center,
+		TitleStyle.Render("🐢"),
+		MutedStyle.Render(" "),
+		AccentStyle.Render(levelName),
+		MutedStyle.Render(fmt.Sprintf(" %s Mission %d/%d",
+			Arrow, m.CurrentMission+1, len(m.Missions[m.CurrentLevel]))),
+	)
+
+	// Mission title and briefing.
 	title := TitleStyle.Render(mission.Title)
-	briefing := BoxStyle.Render(mission.Briefing)
+	briefing := GlowBoxStyle.Width(60).Render(mission.Briefing)
 
-	// Hint (if shown)
+	// Hint.
 	var hint string
 	if m.ShowHint {
 		hint = AccentStyle.Render("💡 " + mission.Hint)
@@ -389,50 +505,32 @@ func (m *MissionTUI) viewMission() string {
 		hint = MutedStyle.Render("Press ? for hint")
 	}
 
-	// Terminal output (history)
-	var terminalContent string
+	// Terminal output and input.
+	terminalView := m.renderTerminalView()
+	location := MutedStyle.Render("📍 " + m.Runner.GetCurrentLocation())
+	inputLine := TerminalStyle.Render(PromptStyle.Render("$ ") + CommandStyle.Render(m.Input+"▋"))
+
+	footer := FooterStyle.Render("  enter execute  " + Bullet + " ? hint  " + Bullet + " ctrl+r reset  " + Bullet + " esc exit")
+
+	return lipgloss.JoinVertical(lipgloss.Left,
+		header, "", title, briefing, "", hint, "", location, terminalView, inputLine, "", footer)
+}
+
+func (m *MissionTUI) renderTerminalView() string {
+	if len(m.History) == 0 {
+		return TerminalStyle.Render(MutedStyle.Render("Type a command and press Enter"))
+	}
+
+	var content string
 	for _, entry := range m.History {
-		terminalContent += PromptStyle.Render("$ ") + CommandStyle.Render(entry.Command) + "\n"
+		content += PromptStyle.Render("$ ") + CommandStyle.Render(entry.Command) + "\n"
 		if entry.Error != "" {
-			terminalContent += DangerStyle.Render(entry.Error) + "\n"
+			content += DangerStyle.Render(entry.Error) + "\n"
 		} else if entry.Output != "" {
-			terminalContent += entry.Output + "\n"
+			content += entry.Output + "\n"
 		}
 	}
-
-	// Current location indicator
-	location := MutedStyle.Render("📍 " + m.Runner.GetCurrentLocation())
-
-	// Input line
-	cursor := "▋"
-	inputLine := TerminalStyle.Render(
-		PromptStyle.Render("$ ") + CommandStyle.Render(m.Input+cursor),
-	)
-
-	// Build terminal view
-	terminalView := TerminalStyle.Render(terminalContent)
-	if terminalContent == "" {
-		terminalView = TerminalStyle.Render(MutedStyle.Render("Type a command and press Enter"))
-	}
-
-	// Footer
-	footer := MutedStyle.Render("enter execute • ctrl+r reset • esc exit")
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		"",
-		title,
-		briefing,
-		"",
-		hint,
-		"",
-		location,
-		terminalView,
-		inputLine,
-		"",
-		footer,
-	)
+	return TerminalStyle.Render(content)
 }
 
 func (m *MissionTUI) viewComplete() string {
@@ -442,63 +540,62 @@ func (m *MissionTUI) viewComplete() string {
 
 	mission := m.Runner.Mission
 
-	title := SuccessStyle.Render("✓ Mission Complete!")
+	// Success header.
+	header := lipgloss.JoinHorizontal(lipgloss.Center,
+		TitleStyle.Render("🐢"),
+		MutedStyle.Render(" TURTLE "),
+	)
+
+	title := SuccessStyle.Render(Star + " Mission Complete! " + Star)
 	missionTitle := TitleStyle.Render(mission.Title)
 
-	explanation := BoxStyle.Render(mission.Explanation)
+	explanation := GlowBoxStyle.Width(60).Render(mission.Explanation)
 
-	// Commands that could solve it
-	var commandsUsed string
+	// Example solutions.
+	var solutions string
 	if len(mission.Commands) > 0 {
-		commandsUsed = MutedStyle.Render("Example solutions: ") +
+		solutions = MutedStyle.Render("Example solutions: ") +
 			CommandStyle.Render(strings.Join(mission.Commands, ", "))
 	}
 
-	// Stats for this mission
-	stats := fmt.Sprintf("Commands used: %d", m.Runner.Attempts)
+	// Stats.
+	stats := MutedStyle.Render(fmt.Sprintf("Commands used: %d", m.Runner.Attempts))
 
-	footer := MutedStyle.Render("Press enter for next mission • esc to menu")
+	footer := FooterStyle.Render("  enter next mission  " + Bullet + " esc menu")
 
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		"",
-		title,
-		missionTitle,
-		"",
-		explanation,
-		"",
-		commandsUsed,
-		MutedStyle.Render(stats),
-		"",
-		footer,
-	)
+	return lipgloss.JoinVertical(lipgloss.Left,
+		"", header, "", title, missionTitle, "", explanation, "", solutions, stats, "", footer)
 }
 
 func (m *MissionTUI) viewStats() string {
-	title := TitleStyle.Render("Stats")
-
-	stats := fmt.Sprintf(`
-  Missions Completed: %d
-  Commands Used: %d
-  Level: %d
-  XP: %d
-  Streak: %d days
-`,
-		m.MissionsCompleted,
-		m.CommandsUsed,
-		m.Progress.Level,
-		m.Progress.XP,
-		m.Progress.CurrentStreak,
+	// Header.
+	header := lipgloss.JoinHorizontal(lipgloss.Center,
+		TitleStyle.Render("🐢"),
+		MutedStyle.Render(" TURTLE "),
+		AccentStyle.Render(Arrow+" Stats"),
 	)
 
-	footer := MutedStyle.Render("Press any key to return")
+	title := SubtitleStyle.Render("YOUR STATISTICS")
 
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		"",
-		title,
-		stats,
-		"",
-		footer,
+	// Session stats.
+	sessionStats := lipgloss.JoinVertical(lipgloss.Left,
+		StatLabelStyle.Render("Missions:")+StatValueStyle.Render(fmt.Sprintf(" %d", m.MissionsCompleted)),
+		StatLabelStyle.Render("Commands:")+StatValueStyle.Render(fmt.Sprintf(" %d", m.CommandsUsed)),
 	)
+
+	// Overall progress.
+	progressStats := lipgloss.JoinVertical(lipgloss.Left,
+		StatLabelStyle.Render("Level:")+LevelStyle.Render(fmt.Sprintf(" %d", m.FlashcardModel.Progress.Level)),
+		StatLabelStyle.Render("XP:")+XPStyle.Render(fmt.Sprintf(" %d", m.FlashcardModel.Progress.XP)),
+		StatLabelStyle.Render("Streak:")+StreakStyle.Render(fmt.Sprintf(" %d days", m.FlashcardModel.Progress.CurrentStreak)),
+	)
+
+	sessionBox := BoxStyle.Width(30).Render(SubtitleStyle.Render("This Session") + "\n\n" + sessionStats)
+	progressBox := GlowBoxStyle.Width(30).Render(SubtitleStyle.Render("All Time") + "\n\n" + progressStats)
+
+	content := lipgloss.JoinHorizontal(lipgloss.Top, sessionBox, "  ", progressBox)
+
+	footer := FooterStyle.Render("  press any key to return")
+
+	return lipgloss.JoinVertical(lipgloss.Left, "", header, "", title, "", content, "", footer)
 }
