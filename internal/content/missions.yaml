@@ -17,7 +17,7 @@ missions:
     setup:
       - cd: /home/learner/projects
     goal:
-      always: true
+      ran_command: pwd
 
   - id: "0.2-whats-here"
     skill_id: ls
@@ -38,7 +38,7 @@ missions:
       - mkdir: /home/learner/projects/docs
       - cd: /home/learner/projects
     goal:
-      always: true
+      ran_command: ls
 
   - id: "0.3-go-home"
     skill_id: cd
@@ -130,7 +130,7 @@ missions:
           content: "SECRET_KEY=abc123\n"
       - cd: /home/learner/project
     goal:
-      always: true
+      ran_command: "ls -a"
 
   - id: "1.2-absolute-path"
     skill_id: cd
@@ -164,7 +164,7 @@ missions:
           content: "The password is: turtlepower\n"
       - cd: /home/learner/mission
     goal:
-      always: true
+      ran_command: cat
 
   - id: "1.4-dot-directory"
     skill_id: cd
@@ -182,7 +182,7 @@ missions:
       - touch: /home/learner/test/file2.txt
       - cd: /home/learner/test
     goal:
-      always: true
+      ran_command: "ls ."
 
   - id: "1.5-long-listing"
     skill_id: ls
@@ -200,7 +200,7 @@ missions:
       - touch: /home/learner/project/small.txt
       - cd: /home/learner/project
     goal:
-      always: true
+      ran_command: "ls -l"
 
   # Level 2: File operations
   - id: "2.1-create-dir"
@@ -356,7 +356,7 @@ missions:
             2024-01-01 INFO: Connection restored
       - cd: /var/log
     goal:
-      always: true
+      ran_command: grep
 
   - id: "3.2-find-file"
     skill_id: find
@@ -373,7 +373,7 @@ missions:
           content: "key: value"
       - cd: /home/learner
     goal:
-      always: true
+      ran_command: find
 
   - id: "3.3-pipe-intro"
     skill_id: pipes
@@ -391,7 +391,7 @@ missions:
       - touch: /home/learner/logs/debug.log
       - cd: /home/learner/logs
     goal:
-      always: true
+      ran_command: ls
 
   - id: "3.4-grep-recursive"
     skill_id: grep
@@ -414,7 +414,7 @@ missions:
           content: "DEBUG = False"
       - cd: /home/learner/project
     goal:
-      always: true
+      ran_command: grep
 
   - id: "3.5-find-and-read"
     skill_id: find
@@ -431,7 +431,7 @@ missions:
           content: "The treasure is buried under the old oak tree.\n"
       - cd: /home/learner
     goal:
-      always: true
+      ran_command: find
 
   # Level 4: Tmux basics
   - id: "4.1-start-tmux"

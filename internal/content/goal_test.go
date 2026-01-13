@@ -9,9 +9,10 @@ import (
 
 // mockFS is a simple GoalEvaluator implementation for tests.
 type mockFS struct {
-	pwd   string
-	paths map[string]bool // true = directory, false = file
-	files map[string]string
+	pwd         string
+	paths       map[string]bool // true = directory, false = file
+	files       map[string]string
+	lastCommand string
 }
 
 func newMockFS() *mockFS {
@@ -43,6 +44,10 @@ func (m *mockFS) ReadFile(path string) (string, error) {
 		return "", &mockError{msg: "file not found"}
 	}
 	return content, nil
+}
+
+func (m *mockFS) LastCommand() string {
+	return m.lastCommand
 }
 
 type mockError struct {
@@ -435,5 +440,79 @@ func TestEmptyOrGoal(t *testing.T) {
 	// Empty OR should return false (vacuously false)
 	if node.Evaluate(fs) {
 		t.Error("empty or should return false (vacuously false)")
+	}
+}
+
+//nolint:funlen // Comprehensive test coverage requires multiple cases
+func TestRanCommandGoal(t *testing.T) {
+	// Test single command string
+	goal1 := map[string]any{"ran_command": "ls"}
+	node1, err := ParseGoal(goal1)
+	if err != nil {
+		t.Fatalf("ParseGoal failed: %v", err)
+	}
+
+	fs := newMockFS()
+
+	// No command run yet
+	if node1.Evaluate(fs) {
+		t.Error("ran_command should return false when no command run")
+	}
+
+	// Run wrong command
+	fs.lastCommand = "pwd"
+	if node1.Evaluate(fs) {
+		t.Error("ran_command should return false for wrong command")
+	}
+
+	// Run correct command
+	fs.lastCommand = "ls"
+	if !node1.Evaluate(fs) {
+		t.Error("ran_command should return true for matching command")
+	}
+
+	// Run command with args - should still match base command
+	fs.lastCommand = "ls -la"
+	if !node1.Evaluate(fs) {
+		t.Error("ran_command should return true for matching base command with args")
+	}
+
+	// Test specific command with args
+	goal2 := map[string]any{"ran_command": "ls -a"}
+	node2, err := ParseGoal(goal2)
+	if err != nil {
+		t.Fatalf("ParseGoal failed: %v", err)
+	}
+
+	fs.lastCommand = "ls"
+	if node2.Evaluate(fs) {
+		t.Error("ran_command 'ls -a' should not match plain 'ls'")
+	}
+
+	fs.lastCommand = "ls -a"
+	if !node2.Evaluate(fs) {
+		t.Error("ran_command 'ls -a' should match 'ls -a'")
+	}
+
+	// Test command array
+	goal3 := map[string]any{"ran_command": []any{"pwd", "ls"}}
+	node3, err := ParseGoal(goal3)
+	if err != nil {
+		t.Fatalf("ParseGoal failed: %v", err)
+	}
+
+	fs.lastCommand = "cd"
+	if node3.Evaluate(fs) {
+		t.Error("ran_command array should not match 'cd'")
+	}
+
+	fs.lastCommand = "pwd"
+	if !node3.Evaluate(fs) {
+		t.Error("ran_command array should match 'pwd'")
+	}
+
+	fs.lastCommand = "ls -la /tmp"
+	if !node3.Evaluate(fs) {
+		t.Error("ran_command array should match 'ls' variants")
 	}
 }

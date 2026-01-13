@@ -6,20 +6,48 @@ package sandbox
 import (
 	"fmt"
 	"strings"
+
+	"github.com/2389-research/turtle/internal/content"
 )
+
+// goalContext adapts Filesystem to the GoalEvaluator interface, adding command tracking.
+type goalContext struct {
+	fs          *Filesystem
+	lastCommand string
+}
+
+func (g *goalContext) Pwd() string {
+	return g.fs.Pwd()
+}
+
+func (g *goalContext) Exists(path string) bool {
+	return g.fs.Exists(path)
+}
+
+func (g *goalContext) IsDir(path string) bool {
+	return g.fs.IsDir(path)
+}
+
+func (g *goalContext) ReadFile(path string) (string, error) {
+	return g.fs.ReadFile(path)
+}
+
+func (g *goalContext) LastCommand() string {
+	return g.lastCommand
+}
 
 // Mission represents a goal-based learning challenge.
 type Mission struct {
 	ID          string
-	SkillID     string                 // Which skill this teaches
-	Level       int                    // 0-5 difficulty
-	Title       string                 // Short mission name
-	Briefing    string                 // What the learner needs to do
-	Hint        string                 // Help if stuck
-	Setup       func(*Filesystem)      // Prepares the filesystem
-	Goal        func(*Filesystem) bool // Returns true if mission complete
-	Explanation string                 // Shown after success
-	Commands    []string               // Commands that could solve this (for reference)
+	SkillID     string                           // Which skill this teaches
+	Level       int                              // 0-5 difficulty
+	Title       string                           // Short mission name
+	Briefing    string                           // What the learner needs to do
+	Hint        string                           // Help if stuck
+	Setup       func(*Filesystem)                // Prepares the filesystem
+	Goal        func(content.GoalEvaluator) bool // Returns true if mission complete
+	Explanation string                           // Shown after success
+	Commands    []string                         // Commands that could solve this (for reference)
 }
 
 // MissionResult represents the outcome of a command.
@@ -99,10 +127,13 @@ func (r *MissionRunner) Execute(input string) MissionResult {
 
 	result := r.executeCommand(cmd, args)
 
-	// Check if mission is complete
-	if r.Mission.Goal != nil && r.Mission.Goal(r.FS) {
-		result.Completed = true
-		r.Completed = true
+	// Check if mission is complete using goalContext for command tracking
+	if r.Mission.Goal != nil {
+		ctx := &goalContext{fs: r.FS, lastCommand: input}
+		if r.Mission.Goal(ctx) {
+			result.Completed = true
+			r.Completed = true
+		}
 	}
 
 	return result

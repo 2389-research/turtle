@@ -8,13 +8,15 @@ import (
 	"strings"
 )
 
-// GoalEvaluator provides filesystem operations needed for goal evaluation.
+// GoalEvaluator provides filesystem and command operations needed for goal evaluation.
 // This interface is implemented by sandbox.Filesystem.
 type GoalEvaluator interface {
 	Pwd() string
 	Exists(path string) bool
 	IsDir(path string) bool
 	ReadFile(path string) (string, error)
+	// LastCommand returns the most recent command executed, or empty string if none.
+	LastCommand() string
 }
 
 // GoalNode represents a parsed goal condition that can be evaluated.
@@ -22,11 +24,48 @@ type GoalNode interface {
 	Evaluate(fs GoalEvaluator) bool
 }
 
-// AlwaysGoal always returns true (for command-match missions).
+// AlwaysGoal always returns true (use sparingly - prefer ran_command for command validation).
 type AlwaysGoal struct{}
 
 func (g *AlwaysGoal) Evaluate(_ GoalEvaluator) bool {
 	return true
+}
+
+// RanCommandGoal checks if the last command matches any of the expected commands.
+// Matching is done by prefix to allow "ls" to match "ls -a" etc.
+type RanCommandGoal struct {
+	Commands []string
+}
+
+func (g *RanCommandGoal) Evaluate(fs GoalEvaluator) bool {
+	lastCmd := fs.LastCommand()
+	if lastCmd == "" {
+		return false
+	}
+	// Normalize: get just the base command for matching
+	lastCmdBase := strings.Fields(lastCmd)
+	if len(lastCmdBase) == 0 {
+		return false
+	}
+	for _, expected := range g.Commands {
+		expectedBase := strings.Fields(expected)
+		if len(expectedBase) == 0 {
+			continue
+		}
+		// Match if base commands are the same
+		if lastCmdBase[0] == expectedBase[0] {
+			// If expected has more specifics, check those too
+			if len(expectedBase) == 1 {
+				// Just checking base command (e.g., "ls" matches "ls", "ls -a", "ls foo")
+				return true
+			}
+			// Check full command prefix match
+			if strings.HasPrefix(lastCmd, expected) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // PwdEqualsGoal checks if current directory matches the expected path.
@@ -149,6 +188,8 @@ func parseGoalKey(key string, value any) (GoalNode, error) {
 	switch key {
 	case "always":
 		return &AlwaysGoal{}, nil
+	case "ran_command":
+		return parseRanCommand(value)
 	case "pwd_equals":
 		return parseStringGoal(key, value, func(s string) GoalNode { return &PwdEqualsGoal{Path: s} })
 	case "path_exists":
@@ -169,6 +210,25 @@ func parseGoalKey(key string, value any) (GoalNode, error) {
 		return parseNot(value)
 	default:
 		return nil, fmt.Errorf("unknown goal operation: %s", key)
+	}
+}
+
+func parseRanCommand(value any) (GoalNode, error) {
+	switch v := value.(type) {
+	case string:
+		return &RanCommandGoal{Commands: []string{v}}, nil
+	case []any:
+		cmds := make([]string, 0, len(v))
+		for i, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("ran_command[%d] expects string, got %T", i, item)
+			}
+			cmds = append(cmds, s)
+		}
+		return &RanCommandGoal{Commands: cmds}, nil
+	default:
+		return nil, fmt.Errorf("ran_command expects string or array of strings, got %T", value)
 	}
 }
 

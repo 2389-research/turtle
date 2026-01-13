@@ -6,6 +6,8 @@ package sandbox
 import (
 	"strings"
 	"testing"
+
+	"github.com/2389-research/turtle/internal/content"
 )
 
 func TestMissionRunner_Execute(t *testing.T) {
@@ -15,7 +17,7 @@ func TestMissionRunner_Execute(t *testing.T) {
 			_ = fs.Mkdir("/tmp")
 			_ = fs.Cd("/tmp")
 		},
-		Goal: func(fs *Filesystem) bool { return fs.Pwd() == "/" },
+		Goal: func(ev content.GoalEvaluator) bool { return ev.Pwd() == "/" },
 	}
 
 	runner := NewMissionRunner(mission)
@@ -262,14 +264,15 @@ func TestMission_CreateDir(t *testing.T) {
 
 	runner := NewMissionRunner(mission)
 
-	// Should not be complete initially
-	if mission.Goal(runner.FS) {
+	// Should not be complete initially - use goalContext for evaluation
+	ctx := &goalContext{fs: runner.FS, lastCommand: ""}
+	if mission.Goal(ctx) {
 		t.Error("Should not be complete before mkdir")
 	}
 
 	// Complete the mission
-	runner.Execute("mkdir workspace")
-	if !mission.Goal(runner.FS) {
+	result := runner.Execute("mkdir workspace")
+	if !result.Completed {
 		t.Error("Should be complete after mkdir workspace")
 	}
 }
