@@ -590,7 +590,8 @@ func LevelNames() []string {
 		"Navigation",
 		"File Operations",
 		"Text Processing",
-		"Advanced",
+		"Tmux Basics",
+		"Muscle Memory",
 	}
 }
 
@@ -601,6 +602,7 @@ func LevelGoals() []string {
 		"Move around with confidence",
 		"Create, copy, move files",
 		"Search and manipulate text",
-		"Power user techniques",
+		"Terminal multiplexing",
+		"Build real workflows",
 	}
 }
